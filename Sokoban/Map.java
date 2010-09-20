@@ -26,8 +26,8 @@ public class Map {
 	* Check if given state has reached the goal on this map.
 	**/
 	public boolean goalReached(State state) {
-		for (Box box : state.getBoxes) {
-			if (mapMatrix[box.getPosition().getY()][box.getPosition().getX()] != 2)
+		for (Box box : state.getBoxes()) {
+			if (mapMatrix[box.position.y][box.position.x] != 2)
 				return false;
 		}
 		return true;
