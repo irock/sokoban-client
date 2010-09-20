@@ -14,6 +14,13 @@ public class State{
 	public Box getBox(int i){
 		return boxes[i];
 	}
+	public Box getBoxByPoint(Point pos){
+		for(int i = 0; i < boxes.length; i++){
+			if(pos.equals(boxes[i].position)){
+				return boxes[i];
+			}
+		}
+	}
 	public void updateBox(int i, Point pos){
 		boxes[i].position = pos;
 	}
