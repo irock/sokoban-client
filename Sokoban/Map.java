@@ -1,8 +1,9 @@
+package Sokoban;
 
-	import java.io.InputStream;
-	import java.io.InputStreamReader;
-	import java.io.PrintWriter;
-	import java.net.Socket;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 
 public class Map {	
 	
@@ -49,21 +50,24 @@ public class Map {
 	/*
 	* Reads a map from the input stream and parses it to an int matrix.
 	*/ 
-	public static int[][] parse (InputStream stream) throws Exception {
+	public static int[][] parse(InputStream stream, State state) throws Exception {
 		
 		byte[] boardBytes = new byte[1024];
 		String boardString = null;
 		stream.read(boardBytes);
 		boardString = new String(boardBytes);
 		System.out.println(boardString);
+        return parse(boardString, state);
+    }
 
+    public static int[][] parse(String boardString, State state) {
 		int col = 0;
 		int row = 0;
 	
 		int maxCol = 0;
 		int maxRow = 0;
 
-		for (byte current : boardBytes) {
+		for (byte current : boardString.getBytes()) {
 		
 			if (current == '\n') {
 				row++;
@@ -82,42 +86,41 @@ public class Map {
 
 		col = 0;
 		row = 0;
-		for (byte current : boardBytes) {
-			
-			if (current == '*' || current == '.') 
-				matrix[row][col] = 2;
-	
-			if (current == '#') 
-				matrix[row][col] = 1;
-			
+		for (byte current : boardString.getBytes()) {
+            switch(current) {
+                case '*':
+                    state.addBox(new Box(col, row));
+                case '.':
+                    matrix[row][col] = 2;
+                    break;
+                case '#':
+                    matrix[row][col] = 1;
+                    break;
+                case '\n':
+                    row++;
+                    col = 0;
+                    break;
+            }
 		
-			if (current == '\n') {
-				row++;
-				col = 0;
-			} else {
+			if (current != '\n') {
 				col++;
 			}
 		}		
-		
-		/*	
+		return matrix;
+	}
+
+	public static void main(String[] args) throws Exception {
+		Socket socket = new Socket("cvap103.nada.kth.se",5555);
+		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+		out.println("5");
+        State state = new State();
+        int matrix[][] = parse(socket.getInputStream(), state);
+
 		for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix[0].length; j++) {
 				System.out.print(matrix[i][j]);	
 			}
 			System.out.println();
 		} 
-		*/		
-		return matrix;
 	}
-
-	/*
-	public static void main(String[] args) throws Exception {
-		Socket socket = new Socket("cvap103.nada.kth.se",5555);
-		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-		out.println("5");		
-		parse(socket.getInputStream());
-
-	}*/	
-
-
 }
