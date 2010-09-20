@@ -1,39 +1,44 @@
 package Sokoban;
 import java.awt.Point;
+import java.util.ArrayList;
 
 public class State{
 	
-	private Box[] boxes;
+	private ArrayList<Box> boxes;
 	private Player player;
 	
 	public State(){
-		
+		boxes = new ArrayList<Box>();
 	}
 
 	public Player getPlayer(){
 		return player;
 	}
 
+    public void addBox(Box box) {
+        boxes.add(box);
+    }
+
 	public Box getBox(int i){
-		return boxes[i];
+		return boxes.get(i);
 	}
 
 	public void updateBox(int i, int x, int y){
-		boxes[i].getPosition().setLocation(x, y);
+		boxes.get(i).getPosition().setLocation(x, y);
 	}
 
 	public Box getBoxByPoint(Point pos){
-		for(int i = 0; i < boxes.length; i++){
-			if(pos.equals(boxes[i].position)){
-				return boxes[i];
+        for(Box box : boxes) {
+			if(pos.equals(box.position)){
+				return box;
 			}
 		}
         return null;
 	}
 
 	public boolean isFree(Point pos){
-		for(int i = 0; i < boxes.length; i++){
-			if(pos.equals(boxes[i].position)){
+        for(Box box : boxes) {
+			if(pos.equals(box.position)){
 				return false;
 			}
 		}
