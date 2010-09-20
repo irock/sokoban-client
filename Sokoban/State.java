@@ -1,3 +1,5 @@
+import java.awt.Point;
+
 public class State{
 	
 	private Box[] boxes;
@@ -12,13 +14,12 @@ public class State{
 	public Box getBox(int i){
 		return boxes[i];
 	}
-	public void updateBox(int i, int x, int y){
-		boxes[i].xpos=x;
-		boxes[i].ypos=y;
+	public void updateBox(int i, Point pos){
+		boxes[i].position = pos;
 	}
-	public boolean isFree(int x, int y){
+	public boolean isFree(Point pos){
 		for(int i = 0; i < boxes.length; i++){
-			if(boxes[i].xpos == x && boxes[i].ypos == y){
+			if(pos.equals(boxes[i].position)){
 				return false;
 			}
 		}
