@@ -2,7 +2,6 @@ package Sokoban;
 import java.util.LinkedList;
 import java.util.List;
 import java.awt.Point;
-import java.util.List;
 import java.util.ArrayList;
 
 public class State{
@@ -31,7 +30,7 @@ public class State{
 		boxes.get(i).getPosition().setLocation(x, y);
 	}
 	public void updatePlayer(Point pos){
-		//TODO
+		player.position = pos;
 	}
 	/*
 	 * Get box if it is at the position and else returns null
