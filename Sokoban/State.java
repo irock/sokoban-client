@@ -1,4 +1,6 @@
 package Sokoban;
+import java.util.LinkedList;
+import java.util.List;
 import java.awt.Point;
 
 public class State{
@@ -16,6 +18,9 @@ public class State{
 
 	public Box getBox(int i){
 		return boxes[i];
+	}
+	public Box[] getBoxes(){
+		return boxes;
 	}
 
 	public void updateBox(int i, int x, int y){
