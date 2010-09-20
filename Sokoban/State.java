@@ -24,7 +24,7 @@ public class State{
 	public Box getBox(int i){
 		return boxes.get(i);
 	}
-	public Box[] getBoxes(){
+	public ArrayList<Box> getBoxes(){
 		return boxes;
 	}
 
