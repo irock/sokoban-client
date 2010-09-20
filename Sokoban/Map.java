@@ -27,7 +27,7 @@ public class Map {
 	**/
 	public boolean goalReached(State state) {
 		for (Box box : state.getBoxes()) {
-			if (mapMatrix[box.getPosition().y][box.getPosition().x] != 2)
+			if (mapMatrix[box.position.y][box.position.x] != 2)
 				return false;
 		}
 		return true;
