@@ -21,6 +21,17 @@ public class Map {
 		mapMatrix = matrix;
 	}
 
+	/**
+	* Check if given state has reached the goal on this map.
+	**/
+	public boolean goalReached(State state) {
+		for (Box box : state.getBoxes) {
+			if (mapMatrix[box.getPosition().getY()][box.getPosition().getX()] != 2)
+				return false;
+		}
+		return true;
+	}
+
 	/*
 	* Return the matrix.
 	*/
