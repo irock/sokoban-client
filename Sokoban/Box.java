@@ -1,3 +1,4 @@
+package Sokoban;
 import java.awt.Point;
 
 public class Box {
@@ -8,8 +9,8 @@ public class Box {
 		position = new Point(xpos, ypos);
 		
 	}
-	
-	private Point getPosition() {
+
+	public Point getPosition() {
 		return position;
 	}
 }
