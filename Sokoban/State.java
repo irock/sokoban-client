@@ -1,3 +1,5 @@
+package Sokoban;
+
 public class State{
 	
 	private Box[] boxes;
@@ -13,12 +15,11 @@ public class State{
 		return boxes[i];
 	}
 	public void updateBox(int i, int x, int y){
-		boxes[i].xpos=x;
-		boxes[i].ypos=y;
+		boxes[i].getPosition().setLocation(x, y);
 	}
 	public boolean isFree(int x, int y){
 		for(int i = 0; i < boxes.length; i++){
-			if(boxes[i].xpos == x && boxes[i].ypos == y){
+			if(boxes[i].getPosition().x == x && boxes[i].getPosition().y == y){
 				return false;
 			}
 		}
