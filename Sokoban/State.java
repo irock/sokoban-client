@@ -6,4 +6,10 @@ public class State{
 	public State(){
 		
 	}
+	public Player getPlayer(){
+		return player;
+	}
+	public Box getBox(int i){
+		return boxes[i];
+	}
 }
