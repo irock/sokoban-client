@@ -1,20 +1,15 @@
+import java.awt.Point;
 
 public class Box {
 
-	int xpos;
-	int ypos;
+	Point position;
 	
 	public Box(int xpos, int ypos) {
-		this.xpos = xpos;
-		this.ypos = ypos;
+		position = new Point(xpos, ypos);
 		
 	}
 	
-	private int getX() {
-		return xpos;
-	}
-	
-	private int getY() {
-		return ypos;
+	private Point getPosition() {
+		return position;
 	}
 }
