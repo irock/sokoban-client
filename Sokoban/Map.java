@@ -26,8 +26,8 @@ public class Map {
 	* Check if given state has reached the goal on this map.
 	**/
 	public boolean goalReached(State state) {
-		for (Box box : state.getBoxes) {
-			if (mapMatrix[box.getPosition().getY()][box.getPosition().getX()] != 2)
+		for (Box box : state.getBoxes()) {
+			if (mapMatrix[box.getPosition().y][box.getPosition().x] != 2)
 				return false;
 		}
 		return true;
@@ -95,6 +95,9 @@ public class Map {
                     break;
                 case '#':
                     matrix[row][col] = 1;
+                    break;
+                case '$':
+                    state.addBox(new Box(col, row));
                     break;
                 case '\n':
                     row++;

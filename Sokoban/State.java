@@ -1,5 +1,6 @@
 package Sokoban;
 import java.awt.Point;
+import java.util.List;
 import java.util.ArrayList;
 
 public class State{
@@ -22,6 +23,10 @@ public class State{
 	public Box getBox(int i){
 		return boxes.get(i);
 	}
+
+    public List<Box> getBoxes() {
+        return boxes;
+    }
 
 	public void updateBox(int i, int x, int y){
 		boxes.get(i).getPosition().setLocation(x, y);
