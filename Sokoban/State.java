@@ -122,4 +122,15 @@ public class State{
 
         return true;
     }
+
+    /**
+	* Check if given state has reached the goal on this map.
+	**/
+	public boolean goalReached() {
+		for (Box box : getBoxes()) {
+			if (map.getMatrix()[box.position.y][box.position.x] != 2)
+				return false;
+		}
+		return true;
+	}
 }
