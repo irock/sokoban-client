@@ -24,18 +24,7 @@ public class Map {
         this.start = start;
 	}
 
-	/**
-	* Check if given state has reached the goal on this map.
-	**/
-	public boolean goalReached(State state) {
-		for (Box box : state.getBoxes()) {
-			if (matrix[box.position.y][box.position.x] != 2)
-				return false;
-		}
-		return true;
-	}
-
-	/*
+    /*
 	* Return the matrix.
 	*/
 	public int[][] getMatrix() {
