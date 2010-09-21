@@ -6,13 +6,15 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Queue;
+import java.util.Map.Entry;
+import java.util.AbstractMap.SimpleEntry;
 
 public class State{
 	
     private Map map;
 	private Box[] boxes;
     private Set<Point> reachablePositions;
-    private Set<java.util.Map.Entry<Direction, Box>> availableMoves;
+    private Set<Entry<Direction, Box>> availableMoves;
 	
 	public State(Point position, List<Box> boxes, Map map){
         this.map = map;
@@ -36,8 +38,8 @@ public class State{
     private void calculateMoves(Point start) {
         Queue<Point> queue = new LinkedList<Point>();
         Set<Point> positions = new HashSet<Point>();
-        Set<java.util.Map.Entry<Direction, Box>> moves =
-            new HashSet<java.util.Map.Entry<Direction, Box>>();
+        Set<Entry<Direction, Box>> moves =
+            new HashSet<Entry<Direction, Box>>();
 
         queue.add(start);
 
@@ -56,7 +58,7 @@ public class State{
                     } else {
                         Point p2 = new Point(p.x + d.dx, p.y + d.dy);
                         if(map.getMatrix()[p2.y][p2.x] != 1 && isFree(p2))
-                            moves.add(new java.util.AbstractMap.SimpleEntry<Direction, Box>(d, getBoxByPoint(p)));
+                            moves.add(new SimpleEntry<Direction, Box>(d, getBoxByPoint(p)));
                     }
                 }
             }
@@ -70,7 +72,7 @@ public class State{
         return reachablePositions;
     }
 
-    public Set<java.util.Map.Entry<Direction, Box>> getAvailableMoves() {
+    public Set<Entry<Direction, Box>> getAvailableMoves() {
         return availableMoves;
     }
 
