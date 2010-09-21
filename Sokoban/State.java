@@ -24,6 +24,15 @@ public class State{
         calculateMoves(position);
 	}
 
+	@Override
+   	public int hashCode() {
+		int hash = 0;
+		for (Box box : boxes) 
+			hash = hash ^ box.getPosition().hashCode();
+		hash = hash * 11;
+		return (hash + reachablePositions.iterator().next().hashCode()); // TODO <-- fix?
+    	}
+
     private void calculateMoves(Point start) {
         Queue<Point> queue = new LinkedList<Point>();
         Set<Point> positions = new HashSet<Point>();
