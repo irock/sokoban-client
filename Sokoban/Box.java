@@ -13,4 +13,8 @@ public class Box {
 	public Point getPosition() {
 		return position;
 	}
+
+    public boolean equals(Box box) {
+        return position.equals(box.position);
+    }
 }

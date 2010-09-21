@@ -4,22 +4,24 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
+import java.util.ArrayList;
+import java.awt.Point;
 
 public class Map {	
 	
-	private int[][] mapMatrix;
+    Point start;
+	private int[][] matrix;
+    List<Box> boxes;
 
-	/*
-	* Default constructor.
-	*/
-	public Map () {
-	}
-	
 	/*
 	* Constructor that takes a matrix.
 	*/
-	public Map (int[][] matrix) {
-		mapMatrix = matrix;
+	private Map (Point start, int[][] matrix, List<Box> boxes) {
+		this.matrix = matrix;
+        this.boxes = new ArrayList<Box>();
+        this.boxes.addAll(boxes);
+        this.start = start;
 	}
 
 	/**
@@ -27,7 +29,7 @@ public class Map {
 	**/
 	public boolean goalReached(State state) {
 		for (Box box : state.getBoxes()) {
-			if (mapMatrix[box.position.y][box.position.x] != 2)
+			if (matrix[box.position.y][box.position.x] != 2)
 				return false;
 		}
 		return true;
@@ -37,30 +39,31 @@ public class Map {
 	* Return the matrix.
 	*/
 	public int[][] getMatrix() {
-		return mapMatrix;
+		return matrix;
 	}
 
-	/*
-	* Sets the matrix.
-	*/
-	public void setMatrix(int[][] matrix) {
-		mapMatrix = matrix;
-	}
+    public List<Box> getBoxes() {
+        return boxes;
+    }
+
+    public Point getStart() {
+        return start;
+    }
 
 	/*
 	* Reads a map from the input stream and parses it to an int matrix.
 	*/ 
-	public static int[][] parse(InputStream stream, State state) throws Exception {
+	public static Map parse(InputStream stream) throws Exception {
 		
 		byte[] boardBytes = new byte[1024];
 		String boardString = null;
 		stream.read(boardBytes);
 		boardString = new String(boardBytes);
 		System.out.println(boardString);
-        return parse(boardString, state);
+        return parse(boardString);
     }
 
-    public static int[][] parse(String boardString, State state) {
+    public static Map parse(String boardString) {
 		int col = 0;
 		int row = 0;
 	
@@ -80,16 +83,18 @@ public class Map {
 		}
 		
 		int[][] matrix = new int[row][maxCol];
+        List<Box> boxes = new ArrayList<Box>();
 		
 		// for debugging purposes
 		//System.out.println("mRow: " + row + "mCol:" + maxCol);
 
+        Point start = new Point(0, 0);
 		col = 0;
 		row = 0;
 		for (byte current : boardString.getBytes()) {
             switch(current) {
                 case '*':
-                    state.addBox(new Box(col, row));
+                    boxes.add(new Box(col, row));
                 case '.':
                     matrix[row][col] = 2;
                     break;
@@ -97,7 +102,10 @@ public class Map {
                     matrix[row][col] = 1;
                     break;
                 case '$':
-                    state.addBox(new Box(col, row));
+                    boxes.add(new Box(col, row));
+                    break;
+                case '@':
+                    start = new Point(col, row);
                     break;
                 case '\n':
                     row++;
@@ -108,22 +116,38 @@ public class Map {
 			if (current != '\n') {
 				col++;
 			}
-		}		
-		return matrix;
+		}
+		return new Map(start, matrix, boxes);
 	}
 
 	public static void main(String[] args) throws Exception {
-		Socket socket = new Socket("cvap103.nada.kth.se",5555);
-		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-		out.println("5");
-        State state = new State();
-        int matrix[][] = parse(socket.getInputStream(), state);
+		//Socket socket = new Socket("cvap103.nada.kth.se",5555);
+		//PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+		//out.println("1");
 
-		for (int i = 0; i < matrix.length; i++) {
-			for (int j = 0; j < matrix[0].length; j++) {
-				System.out.print(matrix[i][j]);	
+        //Map map = parse(socket.getInputStream());
+
+        String mapString = "################\n" +
+                           "#@  $         .#\n" +
+                           "##  #          #\n" +
+                           "################\n";
+        Map map = parse(mapString);
+
+		for(int i = 0; i < map.matrix.length; i++) {
+			for(int j = 0; j < map.matrix[0].length; j++) {
+				System.out.print(map.matrix[i][j]);	
 			}
 			System.out.println();
 		} 
+
+        State state = new State(map.getStart(), map.getBoxes(), map);
+
+        System.out.println("Positions:");
+        for(Point p : state.getReachablePositions())
+            System.out.printf("x: %d, y: %d\n", p.x, p.y);
+        
+        System.out.println("\nMoves:");
+        for(java.util.Map.Entry<Direction, Box> move : state.getAvailableMoves())
+            System.out.printf("direction: %s, x: %d, y: %d\n", move.getKey(), move.getValue().getPosition().x, move.getValue().getPosition().y);
 	}
 }
