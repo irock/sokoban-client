@@ -8,37 +8,48 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.Map.Entry;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Collections;
+import java.util.Arrays;
+import java.util.Comparator;
 
-public class State{
-	
+public class State {
     private Map map;
 	private Box[] boxes;
     private Set<Point> reachablePositions;
     private Set<Entry<Direction, Box>> availableMoves;
+    private State previous;
 	
 	public State(Point position, List<Box> boxes, Map map){
+		Box[] tmp = new Box[boxes.size()];
+
+        for(int i = 0; i < tmp.length; i++)
+            tmp[i] = boxes.get(i);
+
         this.map = map;
-		this.boxes = new Box[boxes.size()];
-
-        for(int i = 0; i < boxes.size(); i++)
-            this.boxes[i] = boxes.get(i);
-
+        this.boxes = tmp;
+        this.previous = null;
         calculateMoves(position);
 	}
-	public State(Point position, Box[] boxes, Map map){
+
+	public State(Point position, Box[] boxes, Map map) {
+        this(position, boxes, map, null);
+    }
+
+	public State(Point position, Box[] boxes, Map map, State previous) {
         this.map = map;
 		this.boxes = boxes;
+        this.previous = previous;
         calculateMoves(position);
 	}
 
 	@Override
-   	public int hashCode() {
-		int hash = 0;
-		for (Box box : boxes) 
-			hash = hash ^ box.getPosition().hashCode();
-		hash = hash * 11;
-		return (hash + reachablePositions.iterator().next().hashCode()); // TODO <-- fix?
-    	}
+    public int hashCode() {
+        int hash = 0;
+        for (Box box : boxes) 
+            hash = hash ^ box.hashCode();
+        hash = hash * 17;
+        return hash + reachablePositions.hashCode();
+    }
 
     private void calculateMoves(Point start) {
         Queue<Point> queue = new LinkedList<Point>();
@@ -74,9 +85,18 @@ public class State{
         reachablePositions = positions;
     }
 
+    public int getNumDone() {
+        int num = 0;
+        for (Box box : boxes)
+            if (map.isGoal(box.getPosition()))
+                num++;
+        return num;
+    }
+
     public Set<Point> getReachablePositions() {
         return reachablePositions;
     }
+
     public Map getMap(){
     	return map;
     }
@@ -92,19 +112,6 @@ public class State{
 		return boxes;
 	}
 	
-	public Box[] getCopyBoxesWithNewMove(Point pos, Direction d){
-		Box[] newboxes = new Box[boxes.length];
-		for(int i = 0; i < boxes.length;i++){
-			if(boxes[i].position != pos){
-				newboxes[i] = boxes[i];
-			}
-			else{
-				newboxes[i] = new Box(boxes[i].getPosition().x + d.dx, boxes[i].getPosition().y + d.dy);
-			}
-		}
-		return newboxes;
-	}
-
 	/*
 	 * Get box if it is at the position and else returns null
 	 */
@@ -126,11 +133,15 @@ public class State{
 		return true;
 	}
 
-    public boolean equals(State state) {
-        if(boxes.length != state.boxes.length)
+    public boolean equals(Object o) {
+        if (!(o instanceof State))
+            return false;
+        
+        State state = (State) o;
+        if (boxes.length != state.boxes.length)
             return false;
 
-        for(int i = 0; i < boxes.length; i++) {
+        for (int i = 0; i < boxes.length; i++) {
             boolean found = false;
             for(int j = 0; j < state.boxes.length; j++)
                 if(boxes[i].equals(state.boxes[j])) {
@@ -142,7 +153,46 @@ public class State{
                 return false;
         }
 
-        return true;
+        Point point = (Point) reachablePositions.toArray()[0];
+
+        return state.reachablePositions.contains(point);
+    }
+
+    public boolean isTrapped() {
+        int numDirections = Direction.values().length;
+        for (Box box : boxes) {
+            for (Direction d : Direction.values()) {
+                Point p = new Point(box.getPosition().x+d.dx,
+                        box.getPosition().y+d.dy);
+                if (map.isWall(p)) {
+                    boolean trapped = true;
+                    for (int i = -1; trapped && i <= 1; i += 2) {
+                        Direction ds = Direction.values()[
+                            (d.ordinal()+i+numDirections) % numDirections];
+
+                        Point pos = new Point(box.getPosition());
+                        Point above = new Point(p);
+                        Point side = new Point(box.getPosition().x + ds.dx,
+                                box.getPosition().y + ds.dy);
+
+                        while (trapped && !map.isWall(pos)) {
+                            if (map.isGoal(pos) || !map.isWall(above))
+                                trapped = false;
+
+                            pos.x += ds.dx;
+                            pos.y += ds.dy;
+                            above.x += ds.dx;
+                            above.y += ds.dy;
+                            side.x += ds.dx;
+                            side.y += ds.dy;
+                        }
+                    }
+                    if (trapped)
+                        return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -155,4 +205,50 @@ public class State{
 		}
 		return true;
 	}
+
+    @Override
+    public String toString() {
+        StringBuffer buffer = new StringBuffer(40 + map.getNumRows() * map.getNumCols());
+
+        buffer.append(String.format("id: %d\n", hashCode()));
+        buffer.append(String.format("trapped? %b\n", isTrapped()));
+        
+        for (int i = 0; i < map.getNumRows(); i++) {
+            for (int j = 0; j < map.getNumCols(); j++) {
+                Point p = new Point(j, i);
+                if (map.isWall(p)) {
+                    buffer.append('#');
+                } else if (!isFree(p)) {
+                    buffer.append((map.isGoal(p) ? '*' : '$'));
+                } else if (map.isGoal(p)) {
+                    buffer.append((reachablePositions.contains(p) ? '\\' : '.'));
+                } else {
+                    buffer.append((reachablePositions.contains(p) ? '/' : ' '));
+                }
+            }
+            buffer.append('\n');
+        }
+
+        return buffer.toString();
+    }
+
+    public String path() {
+        return (previous != null ? previous.path() + "\n" : "") + toString();
+    }
+
+    public static State getStateAfterMove(State from, Entry<Direction, Box> move) {
+        Direction direction = move.getKey();
+        Box box = move.getValue();
+		Box[] boxes = new Box[from.boxes.length];
+
+		for (int i = 0; i < boxes.length;i++) {
+            if (from.boxes[i] == box)
+				boxes[i] = new Box(box.getPosition().x + direction.dx,
+                        box.getPosition().y + direction.dy);
+            else
+                boxes[i] = from.boxes[i];
+		}
+
+        return new State(box.getPosition(), boxes, from.getMap(), from);
+    }
 }

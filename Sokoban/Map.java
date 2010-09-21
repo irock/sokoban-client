@@ -11,16 +11,16 @@ import java.awt.Point;
 public class Map {	
 	
     Point start;
-	private int[][] matrix;
     List<Box> boxes;
+
+	private int[][] matrix;
 
 	/*
 	* Constructor that takes a matrix.
 	*/
 	private Map (Point start, int[][] matrix, List<Box> boxes) {
 		this.matrix = matrix;
-        this.boxes = new ArrayList<Box>();
-        this.boxes.addAll(boxes);
+        this.boxes = boxes;
         this.start = start;
 	}
 
@@ -39,6 +39,26 @@ public class Map {
         return start;
     }
 
+    public int getNumRows() {
+        return matrix.length;
+    }
+
+    public int getNumCols() {
+        return matrix.length > 0 ? matrix[0].length : 0;
+    }
+
+    public boolean isWall(Point p) {
+        return matrix[p.y][p.x] == 1;
+    }
+
+    public boolean isGoal(Point p) {
+        return matrix[p.y][p.x] == 2;
+    }
+
+    public boolean isFree(Point p) {
+        return matrix[p.y][p.x] == 0;
+    }
+
 	/*
 	* Reads a map from the input stream and parses it to an int matrix.
 	*/ 
@@ -48,7 +68,6 @@ public class Map {
 		String boardString = null;
 		stream.read(boardBytes);
 		boardString = new String(boardBytes);
-		System.out.println(boardString);
         return parse(boardString);
     }
 
@@ -107,36 +126,5 @@ public class Map {
 			}
 		}
 		return new Map(start, matrix, boxes);
-	}
-
-	public static void main(String[] args) throws Exception {
-		//Socket socket = new Socket("cvap103.nada.kth.se",5555);
-		//PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-		//out.println("1");
-
-        //Map map = parse(socket.getInputStream());
-
-        String mapString = "######\n" +
-                           "#@$ .#\n" +
-                           "###  #\n" +
-                           "######\n";
-        Map map = parse(mapString);
-
-		for(int i = 0; i < map.matrix.length; i++) {
-			for(int j = 0; j < map.matrix[0].length; j++) {
-				System.out.print(map.matrix[i][j]);	
-			}
-			System.out.println();
-		} 
-
-        State state = new State(map.getStart(), map.getBoxes(), map);
-
-        System.out.println("Positions:");
-        for(Point p : state.getReachablePositions())
-            System.out.printf("x: %d, y: %d\n", p.x, p.y);
-        
-        System.out.println("\nMoves:");
-        for(java.util.Map.Entry<Direction, Box> move : state.getAvailableMoves())
-            System.out.printf("direction: %s, x: %d, y: %d\n", move.getKey(), move.getValue().getPosition().x, move.getValue().getPosition().y);
 	}
 }

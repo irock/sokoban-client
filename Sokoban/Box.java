@@ -17,4 +17,9 @@ public class Box {
     public boolean equals(Box box) {
         return position.equals(box.position);
     }
+
+    @Override
+    public int hashCode() {
+        return position.hashCode();
+    }
 }

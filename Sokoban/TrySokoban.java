@@ -44,8 +44,7 @@ public class TrySokoban {
 	}
 
 	protected int[][] parseTestCase(String testCase) {
-		State state = new State();
-		return Map.parse(testCase, state);
+		return Map.parse(testCase).getMatrix();
 	}
 
 	protected void printMatrix(int[][] matrix) {
