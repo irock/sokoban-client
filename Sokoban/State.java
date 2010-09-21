@@ -47,6 +47,7 @@ public class State{
             new HashSet<Entry<Direction, Box>>();
 
         queue.add(start);
+        positions.add(start);
 
         while(!queue.isEmpty()) {
             Point current = queue.poll();
@@ -98,9 +99,7 @@ public class State{
 				newboxes[i] = boxes[i];
 			}
 			else{
-				Box tmp = boxes[i];
-				tmp.position = new Point(tmp.position.x + d.dx, tmp.position.y + d.dy);
-				newboxes[i] = tmp;
+				newboxes[i] = new Box(boxes[i].getPosition().x + d.dx, boxes[i].getPosition().y + d.dy);
 			}
 		}
 		return newboxes;

@@ -116,10 +116,10 @@ public class Map {
 
         //Map map = parse(socket.getInputStream());
 
-        String mapString = "################\n" +
-                           "#@  $         .#\n" +
-                           "##  #          #\n" +
-                           "################\n";
+        String mapString = "######\n" +
+                           "#@$ .#\n" +
+                           "###  #\n" +
+                           "######\n";
         Map map = parse(mapString);
 
 		for(int i = 0; i < map.matrix.length; i++) {
