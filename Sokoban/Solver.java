@@ -1,13 +1,32 @@
 package Sokoban;
 
+import java.util.LinkedList;
+import java.util.Map.Entry;
+
 public class Solver {
+	
+	private LinkedList<State> queue;
 
 	/**
-	 * @param args
+	 * 
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		
+		
 	}
-
+	public void bfsSolver(){
+		queue = new LinkedList<State>();
+		State tmpState;
+		Box[] tmpBoxList;
+		while(!queue.isEmpty()){
+			State curState = queue.poll();
+			for(Entry<Direction, Box> e : curState.getAvailableMoves()){
+				tmpBoxList = curState.getCopyBoxesWithNewMove(e.getValue().getPosition(),e.getKey());
+				tmpState = new State(e.getValue().getPosition(), tmpBoxList, curState.getMap() );
+				queue.add(tmpState);
+			}
+		}
+	}
 }
+
+	

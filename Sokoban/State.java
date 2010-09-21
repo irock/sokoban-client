@@ -23,6 +23,11 @@ public class State{
 
         calculateMoves(position);
 	}
+	public State(Point position, Box[] boxes, Map map){
+        this.map = map;
+		this.boxes = boxes;
+        calculateMoves(position);
+	}
 
     private void calculateMoves(Point start) {
         Queue<Point> queue = new LinkedList<Point>();
@@ -60,6 +65,9 @@ public class State{
     public Set<Point> getReachablePositions() {
         return reachablePositions;
     }
+    public Map getMap(){
+    	return map;
+    }
 
     public Set<java.util.Map.Entry<Direction, Box>> getAvailableMoves() {
         return availableMoves;
@@ -70,6 +78,21 @@ public class State{
 	 */
 	public Box[] getBoxes(){
 		return boxes;
+	}
+	
+	public Box[] getCopyBoxesWithNewMove(Point pos, Direction d){
+		Box[] newboxes = new Box[boxes.length];
+		for(int i = 0; i < boxes.length;i++){
+			if(boxes[i].position != pos){
+				newboxes[i] = boxes[i];
+			}
+			else{
+				Box tmp = boxes[i];
+				tmp.position = new Point(tmp.position.x + d.dx, tmp.position.y + d.dy);
+				newboxes[i] = tmp;
+			}
+		}
+		return newboxes;
 	}
 
 	/*
