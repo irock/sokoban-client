@@ -10,61 +10,61 @@ import java.util.List;
 
 public class TrySokoban {
 
-	String file;
-	int numberOfTestCases;
-	BufferedReader tests;
+    String file;
+    int numberOfTestCases;
+    BufferedReader tests;
 
-	public static void main(String[] args) throws Exception {
-		new TrySokoban("/Users/agnes/sokoban-client/Sokoban/Sokoban/samples", 11);
-	}
+    public static void main(String[] args) throws Exception {
+        new TrySokoban("/Users/agnes/sokoban-client/Sokoban/Sokoban/samples", 11);
+    }
 
-	public TrySokoban(String file, int numberOfTestCases) throws Exception {
-		this.file = file;
-		this.numberOfTestCases = numberOfTestCases;
-		DataInputStream in = new DataInputStream(new FileInputStream(file));
-		tests = new BufferedReader(new InputStreamReader(in));
-		for (int i = 0; i < numberOfTestCases; i++) {
-			String testCase = getTestCase();
-			// List<Direction> solution = solveProblem(testCase);
-			// trySolution(solution);
-			System.out.println(testCase);
-			int[][] parse = parseTestCase(testCase);
-			printMatrix(parse);
-		}
-	}
+    public TrySokoban(String file, int numberOfTestCases) throws Exception {
+        this.file = file;
+        this.numberOfTestCases = numberOfTestCases;
+        DataInputStream in = new DataInputStream(new FileInputStream(file));
+        tests = new BufferedReader(new InputStreamReader(in));
+        for (int i = 0; i < numberOfTestCases; i++) {
+            String testCase = getTestCase();
+            // List<Direction> solution = solveProblem(testCase);
+            // trySolution(solution);
+            System.out.println(testCase);
+            int[][] parse = parseTestCase(testCase);
+            printMatrix(parse);
+        }
+    }
 
-	protected String getTestCase() throws IOException {
-		String testCase = "";
-		String temp = "";
-		while (!(temp = tests.readLine()).contains(";")) {
-			testCase += temp;
-			testCase += "\n";
-		}
-		return testCase;
-	}
+    protected String getTestCase() throws IOException {
+        String testCase = "";
+        String temp = "";
+        while (!(temp = tests.readLine()).contains(";")) {
+            testCase += temp;
+            testCase += "\n";
+        }
+        return testCase;
+    }
 
-	protected int[][] parseTestCase(String testCase) {
-		return Map.parse(testCase).getMatrix();
-	}
+    protected int[][] parseTestCase(String testCase) {
+        return Map.parse(testCase).getMatrix();
+    }
 
-	protected void printMatrix(int[][] matrix) {
+    protected void printMatrix(int[][] matrix) {
 
-		for (int i = 0; i < matrix.length; i++) {
-			for (int j = 0; j < matrix[0].length; j++) {
-				System.out.print(matrix[i][j]);
-			}
-			System.out.println();
-		}
-		System.out.println();
-	}
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                System.out.print(matrix[i][j]);
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
 
-	protected List<Direction> solveProblem(String problem) {
-		// TODO
-		List<Direction> solution = new LinkedList<Direction>();
-		return solution;
-	}
+    protected List<Direction> solveProblem(String problem) {
+        // TODO
+        List<Direction> solution = new LinkedList<Direction>();
+        return solution;
+    }
 
-	protected void trySolution(List<Direction> solution) {
-		// TODO
-	}
+    protected void trySolution(List<Direction> solution) {
+        // TODO
+    }
 }

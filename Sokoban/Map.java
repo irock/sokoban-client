@@ -8,28 +8,28 @@ import java.util.List;
 import java.util.ArrayList;
 import java.awt.Point;
 
-public class Map {	
-	
+public class Map {
+
     Point start;
     List<Box> boxes;
 
-	private int[][] matrix;
-
-	/*
-	* Constructor that takes a matrix.
-	*/
-	private Map (Point start, int[][] matrix, List<Box> boxes) {
-		this.matrix = matrix;
-        this.boxes = boxes;
-        this.start = start;
-	}
+    private int[][] matrix;
 
     /*
-	* Return the matrix.
-	*/
-	public int[][] getMatrix() {
-		return matrix;
-	}
+    * Constructor that takes a matrix.
+    */
+    private Map (Point start, int[][] matrix, List<Box> boxes) {
+        this.matrix = matrix;
+        this.boxes = boxes;
+        this.start = start;
+    }
+
+    /*
+    * Return the matrix.
+    */
+    public int[][] getMatrix() {
+        return matrix;
+    }
 
     public List<Box> getBoxes() {
         return boxes;
@@ -59,47 +59,47 @@ public class Map {
         return matrix[p.y][p.x] == 0;
     }
 
-	/*
-	* Reads a map from the input stream and parses it to an int matrix.
-	*/ 
-	public static Map parse(InputStream stream) throws Exception {
-		
-		byte[] boardBytes = new byte[1024];
-		String boardString = null;
-		stream.read(boardBytes);
-		boardString = new String(boardBytes);
+    /*
+    * Reads a map from the input stream and parses it to an int matrix.
+    */
+    public static Map parse(InputStream stream) throws Exception {
+
+        byte[] boardBytes = new byte[1024];
+        String boardString = null;
+        stream.read(boardBytes);
+        boardString = new String(boardBytes);
         return parse(boardString);
     }
 
     public static Map parse(String boardString) {
-		int col = 0;
-		int row = 0;
-	
-		int maxCol = 0;
-		int maxRow = 0;
+        int col = 0;
+        int row = 0;
 
-		for (byte current : boardString.getBytes()) {
-		
-			if (current == '\n') {
-				row++;
-				if (col > maxCol)
-					maxCol = col;
-				col = 0;
-			} else {
-				col++;
-			}
-		}
-		
-		int[][] matrix = new int[row][maxCol];
+        int maxCol = 0;
+        int maxRow = 0;
+
+        for (byte current : boardString.getBytes()) {
+
+            if (current == '\n') {
+                row++;
+                if (col > maxCol)
+                    maxCol = col;
+                col = 0;
+            } else {
+                col++;
+            }
+        }
+
+        int[][] matrix = new int[row][maxCol];
         List<Box> boxes = new ArrayList<Box>();
-		
-		// for debugging purposes
-		//System.out.println("mRow: " + row + "mCol:" + maxCol);
+
+        // for debugging purposes
+        //System.out.println("mRow: " + row + "mCol:" + maxCol);
 
         Point start = new Point(0, 0);
-		col = 0;
-		row = 0;
-		for (byte current : boardString.getBytes()) {
+        col = 0;
+        row = 0;
+        for (byte current : boardString.getBytes()) {
             switch(current) {
                 case '*':
                     boxes.add(new Box(col, row));
@@ -120,11 +120,11 @@ public class Map {
                     col = 0;
                     break;
             }
-		
-			if (current != '\n') {
-				col++;
-			}
-		}
-		return new Map(start, matrix, boxes);
-	}
+
+            if (current != '\n') {
+                col++;
+            }
+        }
+        return new Map(start, matrix, boxes);
+    }
 }
