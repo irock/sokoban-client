@@ -53,11 +53,10 @@ public class Solver {
         while (!queue.isEmpty() && visited.size() < searchLimit) {
             State curState = queue.poll();
             numExpanded++;
-            System.out.println("expanded: " + numInspected + ", inspected: " + numInspected + ", num filled: " + curState.getNumDone());
-            System.out.printf("");
+            //System.out.println("expanded: " + numInspected + ", inspected: " + numInspected + ", num filled: " + curState.getNumDone());
             //System.out.printf("expanded: %d\n", numInspected);
-            //System.out.printf("expanded: %d, inspected: %d, num filled: %d\r",
-            //        numExpanded, numInspected, curState.getNumDone());
+            System.out.printf("expanded: %d, inspected: %d, num filled: %d\r",
+                    numExpanded, numInspected, curState.getNumDone());
 
             for (Entry<Direction, Box> move : curState.getAvailableMoves()) {
                 State nextState = State.getStateAfterMove(curState, move);
