@@ -27,7 +27,7 @@ public class Solver {
     static boolean printStatePath = false;
     static boolean printDirectionPath = true;
     static boolean printPuzzle = true;
-    static boolean useServer = true;
+    static boolean useServer = false;
     static int searchLimit = 500000;
 
     Map map;
@@ -41,6 +41,7 @@ public class Solver {
     }
 
     public int breadthFirstSearch() {
+        int numExpanded = 0;
         int numInspected = 0;
         Comparator<State> heuristic = new NumDoneHeuristic();
         Queue<State> queue = new PriorityQueue<State>(200000, heuristic);
@@ -51,22 +52,26 @@ public class Solver {
 
         while (!queue.isEmpty() && visited.size() < searchLimit) {
             State curState = queue.poll();
-            System.out.printf("visited: %d, inspected: %d, num filled: %d\r",
-                    visited.size(), numInspected, curState.getNumDone());
+            numExpanded++;
+            System.out.println("expanded: " + numInspected + ", inspected: " + numInspected + ", num filled: " + curState.getNumDone());
+            System.out.printf("");
+            //System.out.printf("expanded: %d\n", numInspected);
+            //System.out.printf("expanded: %d, inspected: %d, num filled: %d\r",
+            //        numExpanded, numInspected, curState.getNumDone());
 
             for (Entry<Direction, Box> move : curState.getAvailableMoves()) {
                 State nextState = State.getStateAfterMove(curState, move);
                 numInspected++;
 
-                if (!nextState.isTrapped() && !visited.contains(nextState)) {
+                if (!visited.contains(nextState) && !nextState.isTrapped()) {
                     if (nextState.goalReached()) {
                         endState = nextState;
                         System.out.println();
                         return numInspected;
                     }
                     queue.add(nextState);
-                    visited.add(nextState);
                 }
+                visited.add(nextState);
             }
         }
         System.out.println();

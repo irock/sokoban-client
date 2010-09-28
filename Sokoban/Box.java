@@ -14,6 +14,11 @@ public class Box {
         return position;
     }
 
+    public void setPosition(Point p) {
+        position.x = p.x;
+        position.y = p.y;
+    }
+
     public boolean equals(Object o) {
         if (!(o instanceof Box))
             return false;

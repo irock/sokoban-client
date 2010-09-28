@@ -20,6 +20,7 @@ public class State {
     private Set<Entry<Direction, Box>> availableMoves;
     private State previous;
     private Point start;
+    int goalDist;
 
     public State(Point position, List<Box> boxes, Map map){
         Box[] tmp = new Box[boxes.size()];
@@ -31,6 +32,7 @@ public class State {
         this.boxes = tmp;
         this.previous = null;
         this.start = position;
+        this.goalDist = -1;
         calculateMoves();
     }
 
@@ -43,6 +45,7 @@ public class State {
         this.boxes = boxes;
         this.previous = previous;
         this.start = position;
+        this.goalDist = -1;
         calculateMoves();
     }
 
@@ -160,46 +163,105 @@ public class State {
         return state.reachablePositions.contains(start);
     }
 
+    public boolean wouldBeTrapped(Direction direction, Box box) {
+        Point src = new Point(box.getPosition());
+        Point dst = new Point(src);
+        dst.translate(direction.dx, direction.dy);
+
+        box.setPosition(dst);
+        boolean trapped = boxIsTrapped(box);
+        box.setPosition(src);
+
+        return trapped;
+    }
+
+    public boolean boxIsLocked(Box box) {
+        return boxIsLocked(box, new HashSet<Box>());
+    }
+
+    public boolean boxIsLocked(Box box, Set<Box> checkedBoxes) {
+        int numDirections = Direction.values().length;
+        checkedBoxes.add(box);
+
+        for (int i = 0; i < numDirections; i++) {
+            Direction d1 = Direction.values()[i];
+            Direction d2 = Direction.values()[(i+1)%numDirections];
+            Point p1 = new Point(box.getPosition().x+d1.dx,
+                    box.getPosition().y+d1.dy);
+            Point p2 = new Point(box.getPosition().x+d2.dx,
+                    box.getPosition().y+d2.dy);
+
+            if (isBlocked(p1, checkedBoxes) && isBlocked(p2, checkedBoxes))
+                return true;
+        }
+        return false;
+    }
+
+    private boolean isBlocked(Point p, Set<Box> checkedBoxes) {
+        if (map.isWall(p))
+            return true;
+
+        //Box box = getBoxByPoint(p);
+        //if (box != null && !checkedBoxes.contains(box))
+        //    return boxIsLocked(box, checkedBoxes);
+
+        return false;
+    }
+
+    public boolean boxIsTrapped(Box box) {
+        int numDirections = Direction.values().length;
+        for (Direction d : Direction.values()) {
+            Point p = new Point(box.getPosition().x+d.dx,
+                    box.getPosition().y+d.dy);
+
+            if (map.isWall(p)) {
+                boolean trapped = true;
+                for (int i = -1; trapped && i <= 1; i += 2) {
+                    Direction ds = Direction.values()[
+                        (d.ordinal()+i+numDirections) % numDirections];
+
+                    Point pos = new Point(box.getPosition());
+                    Point above = new Point(p);
+                    Point side = new Point(box.getPosition().x + ds.dx,
+                            box.getPosition().y + ds.dy);
+
+                    Point pushSide = new Point(box.getPosition().x -ds.dx,
+                            box.getPosition().y - ds.dy);
+
+                    if (map.isGoal(pos)) {
+                        trapped = false;
+                    } else if (!map.isWall(pushSide)) {
+                        while (trapped && !map.isWall(pos)) {
+                            if (map.isGoal(pos) || !map.isWall(above))
+                                trapped = false;
+
+                            pos.x += ds.dx;
+                            pos.y += ds.dy;
+                            above.x += ds.dx;
+                            above.y += ds.dy;
+                            side.x += ds.dx;
+                            side.y += ds.dy;
+                        }
+                    }
+                }
+                if (trapped)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isTrapped() {
         int numDirections = Direction.values().length;
         for (Box box : boxes) {
-            for (Direction d : Direction.values()) {
-                Point p = new Point(box.getPosition().x+d.dx,
-                        box.getPosition().y+d.dy);
-                if (map.isWall(p)) {
-                    boolean trapped = true;
-                    for (int i = -1; trapped && i <= 1; i += 2) {
-                        Direction ds = Direction.values()[
-                            (d.ordinal()+i+numDirections) % numDirections];
+            //if (!map.isGoal(box.getPosition()) && boxIsLocked(box)
+            //        && !boxIsTrapped(box))
+            //    System.out.println(this);
 
-                        Point pos = new Point(box.getPosition());
-                        Point above = new Point(p);
-                        Point side = new Point(box.getPosition().x + ds.dx,
-                                box.getPosition().y + ds.dy);
-
-                        Point pushSide = new Point(box.getPosition().x -ds.dx,
-                                box.getPosition().y - ds.dy);
-
-                        if (map.isGoal(pos)) {
-                            trapped = false;
-                        } else if (!map.isWall(pushSide)) {
-                            while (trapped && !map.isWall(pos)) {
-                                if (map.isGoal(pos) || !map.isWall(above))
-                                    trapped = false;
-
-                                pos.x += ds.dx;
-                                pos.y += ds.dy;
-                                above.x += ds.dx;
-                                above.y += ds.dy;
-                                side.x += ds.dx;
-                                side.y += ds.dy;
-                            }
-                        }
-                    }
-                    if (trapped)
-                        return true;
-                }
-            }
+            /*if ((!map.isGoal(box.getPosition()) && boxIsLocked(box)))
+                return true;
+            else */if (boxIsTrapped(box))
+                return true;
         }
         return false;
     }
@@ -220,7 +282,15 @@ public class State {
         StringBuffer buffer = new StringBuffer(40 + map.getNumRows() * map.getNumCols());
 
         buffer.append(String.format("id: %d\n", hashCode()));
-        buffer.append(String.format("trapped? %b\n", isTrapped()));
+        //buffer.append(String.format("trapped? %b\n", isTrapped()));
+        buffer.append(String.format("dist^2: %d\n", getAvgGoalDist()));
+        
+        int numLocked = 0;
+        for (Box box : boxes)
+            if (boxIsLocked(box))
+                numLocked++;
+
+        buffer.append(String.format("locked: %d\n", numLocked));
 
         for (int i = 0; i < map.getNumRows(); i++) {
             for (int j = 0; j < map.getNumCols(); j++) {
@@ -238,7 +308,7 @@ public class State {
             buffer.append('\n');
         }
 
-        return buffer.toString();
+        return "\n" + buffer.toString();
     }
 
     public String statePath() {
@@ -336,5 +406,18 @@ public class State {
         }
 
         return new State(box.getPosition(), boxes, from.getMap(), from);
+    }
+
+    public int getAvgGoalDist() {
+        if (goalDist < 0) {
+            goalDist = 0;
+            for (Box box : boxes) {
+                for (Point goalPoint : map.getGoals()) {
+                    goalDist += (int)Math.pow(box.getPosition().x - goalPoint.x, 2)
+                              + (int)Math.pow(box.getPosition().y - goalPoint.y, 2);
+                }
+            }
+        }
+        return goalDist;
     }
 }

@@ -12,6 +12,7 @@ public class Map {
 
     Point start;
     List<Box> boxes;
+    List<Point> goals;
 
     private int[][] matrix;
 
@@ -22,6 +23,12 @@ public class Map {
         this.matrix = matrix;
         this.boxes = boxes;
         this.start = start;
+        this.goals = new ArrayList<Point>();
+
+        for (int y = 0; y < this.matrix.length; y++)
+            for (int x = 0; x < this.matrix[0].length; x++)
+                if (this.matrix[y][x] == 2)
+                    this.goals.add(new Point(x, y));
     }
 
     /*
@@ -33,6 +40,10 @@ public class Map {
 
     public List<Box> getBoxes() {
         return boxes;
+    }
+
+    public List<Point> getGoals() {
+        return goals;
     }
 
     public Point getStart() {
