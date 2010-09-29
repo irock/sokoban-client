@@ -7,7 +7,9 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.HashSet;
@@ -15,7 +17,7 @@ import java.util.Queue;
 import java.util.PriorityQueue;
 import java.util.Comparator;
 
-// Unsolved puzzles: 8, 38, 52, 56, 57, 61, 64, 69
+// Unsolved puzzles with numDone+stepsFromGoal: 33, 52, 56, 66, 70, 72, 73, 77
 
 public class Solver {
     public class NumDoneHeuristic implements Comparator<State> {
@@ -24,11 +26,62 @@ public class Solver {
         }
     }
 
+    public class GoalDistanceHeuristic implements Comparator<State> {
+        public int compare(State a, State b) {
+            return a.getGoalDistance() - b.getGoalDistance();
+        }
+    }
+
+    public class NumMovesHeuristic implements Comparator<State> {
+        public int compare(State a, State b) {
+            return a.getNumMoves() - b.getNumMoves();
+        }
+    }
+
+    public class MultipleHeuristic implements Comparator<State> {
+        List<Comparator<State>> comparators;
+
+        public MultipleHeuristic() {
+            comparators = new LinkedList<Comparator<State>>();
+        }
+
+        public void add(Comparator<State> comparator) {
+            comparators.add(comparator);
+        }
+
+        public int compare(State a, State b) {
+            for (Comparator<State> comparator : comparators) {
+                int tmp = comparator.compare(a, b);
+                if (tmp != 0)
+                    return tmp;
+            }
+            return 0;
+        }
+    }
+
+    public class StepsFromGoalHeuristic implements Comparator<State> {
+        public int compare(State a, State b) {
+            return a.getStepsFromGoal() - b.getStepsFromGoal();
+        }
+    }
+
+    public class RandomHeuristic implements Comparator<State> {
+        Random random;
+        public RandomHeuristic() {
+            random = new Random();
+        }
+
+        public int compare(State a, State b) {
+            return random.nextBoolean() ? -1 : 1;
+        }
+    }
+
     static boolean printStatePath = false;
     static boolean printDirectionPath = true;
     static boolean printPuzzle = true;
-    static boolean useServer = false;
-    static int searchLimit = 500000;
+    static boolean printProgress = true;
+    static boolean useServer = true;
+    static int searchLimit = 200000;
 
     Map map;
     State startState;
@@ -43,8 +96,17 @@ public class Solver {
     public int breadthFirstSearch() {
         int numExpanded = 0;
         int numInspected = 0;
-        Comparator<State> heuristic = new NumDoneHeuristic();
-        Queue<State> queue = new PriorityQueue<State>(200000, heuristic);
+
+        Comparator<State> heuristic1 = new NumDoneHeuristic();
+        Comparator<State> heuristic2 = new GoalDistanceHeuristic();
+        Comparator<State> heuristic3 = new NumMovesHeuristic();
+        MultipleHeuristic heuristic4 = new MultipleHeuristic();
+        Comparator<State> heuristic5 = new RandomHeuristic();
+        Comparator<State> heuristic6 = new StepsFromGoalHeuristic();
+        heuristic4.add(heuristic1);
+        heuristic4.add(heuristic6);
+
+        Queue<State> queue = new PriorityQueue<State>(10000, heuristic4);
         Set<State> visited = new HashSet<State>();
 
         queue.add(startState);
@@ -53,10 +115,9 @@ public class Solver {
         while (!queue.isEmpty() && visited.size() < searchLimit) {
             State curState = queue.poll();
             numExpanded++;
-            //System.out.println("expanded: " + numInspected + ", inspected: " + numInspected + ", num filled: " + curState.getNumDone());
-            //System.out.printf("expanded: %d\n", numInspected);
-            System.out.printf("expanded: %d, inspected: %d, num filled: %d\r",
-                    numExpanded, numInspected, curState.getNumDone());
+            if (printProgress)
+                System.out.printf("expanded: %6d, inspected: %6d, num filled: %2d\r",
+                        numExpanded, numInspected, curState.getNumDone());
 
             for (Entry<Direction, Box> move : curState.getAvailableMoves()) {
                 State nextState = State.getStateAfterMove(curState, move);

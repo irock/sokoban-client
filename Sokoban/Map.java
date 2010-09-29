@@ -9,11 +9,9 @@ import java.util.ArrayList;
 import java.awt.Point;
 
 public class Map {
-
-    Point start;
-    List<Box> boxes;
-    List<Point> goals;
-
+    private Point start;
+    private List<Box> boxes;
+    private List<Point> goals;
     private int[][] matrix;
 
     /*
@@ -29,13 +27,6 @@ public class Map {
             for (int x = 0; x < this.matrix[0].length; x++)
                 if (this.matrix[y][x] == 2)
                     this.goals.add(new Point(x, y));
-    }
-
-    /*
-    * Return the matrix.
-    */
-    public int[][] getMatrix() {
-        return matrix;
     }
 
     public List<Box> getBoxes() {
