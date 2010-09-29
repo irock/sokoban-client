@@ -81,7 +81,7 @@ public class Solver {
     static boolean printPuzzle = true;
     static boolean printProgress = true;
     static boolean useServer = true;
-    static int searchLimit = 200000;
+    static int searchLimit = 50000;
 
     Map map;
     State startState;
@@ -112,7 +112,7 @@ public class Solver {
         queue.add(startState);
         visited.add(startState);
 
-        while (!queue.isEmpty() && visited.size() < searchLimit) {
+        while (!queue.isEmpty() && numExpanded < searchLimit) {
             State curState = queue.poll();
             numExpanded++;
             if (printProgress)
@@ -131,8 +131,8 @@ public class Solver {
                             return numInspected;
                         }
                         queue.add(nextState);
+                        visited.add(nextState);
                     }
-                    visited.add(nextState);
                 }
             }
         }
@@ -172,6 +172,12 @@ public class Solver {
 
                 in.read(buffer, 0, buffer.length);
                 mapString = new String(buffer);
+
+                if (mapString.substring(0, "Wrong ID".length()).equals("Wrong ID")) {
+                    System.out.println("Invalid puzzle number specified!");
+                    socket.close();
+                    return;
+                }
             } catch (IOException e) {
                 System.err.println(e.getMessage());
                 return;

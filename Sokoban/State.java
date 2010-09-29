@@ -5,6 +5,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.Queue;
 import java.util.Map.Entry;
 import java.util.AbstractMap.SimpleEntry;
@@ -16,9 +17,17 @@ import java.util.HashMap;
 public class State {
     private Map map;
     private Box[] boxes;
-    private Set<Point> reachablePositions;
     private State previous;
     private Point start;
+    private Point min;
+
+    public class PointComparator implements Comparator<Point> {
+        public int compare(Point a, Point b) {
+            if (a.x != b.x)
+                return a.x-b.x;
+            return a.y-b.y;
+        }
+    }
 
     public State(Point position, List<Box> boxes, Map map){
         Box[] tmp = new Box[boxes.size()];
@@ -27,10 +36,10 @@ public class State {
             tmp[i] = boxes.get(i);
 
         this.map = map;
+        this.min = null;
         this.boxes = tmp;
         this.previous = null;
         this.start = position;
-        calculateMoves();
     }
 
     public State(Point position, Box[] boxes, Map map) {
@@ -39,10 +48,10 @@ public class State {
 
     public State(Point position, Box[] boxes, Map map, State previous) {
         this.map = map;
+        this.min = null;
         this.boxes = boxes;
         this.previous = previous;
         this.start = position;
-        calculateMoves();
     }
 
     @Override
@@ -51,15 +60,15 @@ public class State {
         for (Box box : boxes)
             hash = hash ^ box.hashCode();
         hash = hash * 17;
-        return hash + reachablePositions.hashCode();
+        return hash + getMinPosition().hashCode();
     }
 
-    private void calculateMoves() {
+    private Set<Point> getReachablePositions() {
         Queue<Point> queue = new LinkedList<Point>();
-        Set<Point> positions = new HashSet<Point>();
+        Set<Point> reachablePositions = new TreeSet<Point>(new PointComparator());
 
         queue.add(start);
-        positions.add(start);
+        reachablePositions.add(start);
 
         while(!queue.isEmpty()) {
             Point current = queue.poll();
@@ -68,15 +77,26 @@ public class State {
                 Point p = new Point(current.x + d.dx, current.y + d.dy);
 
                 if(!map.isWall(p) && isFree(p)) {
-                    if(!positions.contains(p)) {
+                    if(!reachablePositions.contains(p)) {
                         queue.add(p);
-                        positions.add(p);
+                        reachablePositions.add(p);
                     }
                 }
             }
         }
 
-        reachablePositions = positions;
+        if (min == null) {
+            for (Point p : reachablePositions)
+                if (min == null || p.x < min.x || (p.x == min.x && p.y < min.y))
+                    min = p;
+        }
+        return reachablePositions;
+    }
+
+    public Point getMinPosition() {
+        if (min == null)
+            getReachablePositions();
+        return min;
     }
 
     public int getNumDone() {
@@ -89,10 +109,6 @@ public class State {
 
     public int getNumMoves() {
         return previous == null ? 0 : previous.getNumMoves() + 1;
-    }
-
-    public Set<Point> getReachablePositions() {
-        return reachablePositions;
     }
 
     public Map getMap(){
@@ -153,13 +169,10 @@ public class State {
             return false;
 
         State state = (State) o;
-        if (boxes.length != state.boxes.length)
-            return false;
-
-        for (int i = 0; i < boxes.length; i++) {
+        for (Box box : boxes) {
             boolean found = false;
-            for(int j = 0; j < state.boxes.length; j++)
-                if(boxes[i].equals(state.boxes[j])) {
+            for (Box target : state.boxes)
+                if(box.equals(target)) {
                     found = true;
                     break;
                 }
@@ -168,7 +181,7 @@ public class State {
                 return false;
         }
 
-        return state.reachablePositions.contains(start);
+        return state.getMinPosition().equals(getMinPosition());
     }
 
     public boolean wouldBeTrapped(Direction direction, Box box) {
@@ -342,6 +355,7 @@ public class State {
     @Override
     public String toString() {
         StringBuffer buffer = new StringBuffer(map.getNumRows()*map.getNumCols());
+        Set<Point> reachable = getReachablePositions();
 
         buffer.append(String.format("hash: %d\n", hashCode()));
         buffer.append(String.format("trapped? %b\n", isTrapped()));
@@ -369,9 +383,9 @@ public class State {
                 } else if (!isFree(p)) {
                     buffer.append((map.isGoal(p) ? '*' : '$'));
                 } else if (map.isGoal(p)) {
-                    buffer.append((reachablePositions.contains(p) ? '\\' : '.'));
+                    buffer.append((reachable.contains(p) ? '\\' : '.'));
                 } else {
-                    buffer.append((reachablePositions.contains(p) ? '/' : ' '));
+                    buffer.append((reachable.contains(p) ? '/' : ' '));
                 }
             }
         }
@@ -489,11 +503,10 @@ public class State {
         Box[] boxes = new Box[from.boxes.length];
 
         for (int i = 0; i < boxes.length;i++) {
-            if (from.boxes[i] == box) {
-                //Point p = from.getTunnelEndPoint(
+            if (from.boxes[i] == box)
                 boxes[i] = new Box(box.getPosition().x + direction.dx,
                         box.getPosition().y + direction.dy);
-            } else
+            else
                 boxes[i] = from.boxes[i];
         }
 
