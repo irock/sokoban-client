@@ -14,9 +14,6 @@ public class Map {
     private List<Point> goals;
     private int[][] matrix;
 
-    /*
-    * Constructor that takes a matrix.
-    */
     private Map (Point start, int[][] matrix, List<Box> boxes) {
         this.matrix = matrix;
         this.boxes = boxes;
@@ -94,9 +91,6 @@ public class Map {
 
         int[][] matrix = new int[row][maxCol];
         List<Box> boxes = new ArrayList<Box>();
-
-        // for debugging purposes
-        //System.out.println("mRow: " + row + "mCol:" + maxCol);
 
         Point start = new Point(0, 0);
         col = 0;

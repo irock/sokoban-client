@@ -17,11 +17,8 @@ public class State {
     private Map map;
     private Box[] boxes;
     private Set<Point> reachablePositions;
-    private List<Entry<Direction, Box>> availableMoves;
     private State previous;
     private Point start;
-    int goalDist;
-    int numMoves;
 
     public State(Point position, List<Box> boxes, Map map){
         Box[] tmp = new Box[boxes.size()];
@@ -33,8 +30,6 @@ public class State {
         this.boxes = tmp;
         this.previous = null;
         this.start = position;
-        this.goalDist = -1;
-        this.numMoves = -1;
         calculateMoves();
     }
 
@@ -47,8 +42,6 @@ public class State {
         this.boxes = boxes;
         this.previous = previous;
         this.start = position;
-        this.goalDist = -1;
-        this.numMoves = -1;
         calculateMoves();
     }
 
@@ -64,8 +57,6 @@ public class State {
     private void calculateMoves() {
         Queue<Point> queue = new LinkedList<Point>();
         Set<Point> positions = new HashSet<Point>();
-        List<Entry<Direction, Box>> moves =
-            new LinkedList<Entry<Direction, Box>>();
 
         queue.add(start);
         positions.add(start);
@@ -76,23 +67,15 @@ public class State {
             for(Direction d : Direction.values()) {
                 Point p = new Point(current.x + d.dx, current.y + d.dy);
 
-                if(!map.isWall(p)) {
-                    if(isFree(p)) {
-                        if(!positions.contains(p)) {
-                            queue.add(p);
-                            positions.add(p);
-                        }
-                    } else {
-                        Point p2 = new Point(p.x + d.dx, p.y + d.dy);
-                        if(!map.isWall(p2) && isFree(p2))
-                            moves.add(new SimpleEntry<Direction, Box>(d,
-                                        getBoxByPoint(p)));
+                if(!map.isWall(p) && isFree(p)) {
+                    if(!positions.contains(p)) {
+                        queue.add(p);
+                        positions.add(p);
                     }
                 }
             }
         }
 
-        availableMoves = moves;
         reachablePositions = positions;
     }
 
@@ -105,13 +88,7 @@ public class State {
     }
 
     public int getNumMoves() {
-        if (numMoves == -1) {
-            if (previous == null)
-                numMoves = 0;
-            else
-                numMoves = previous.getNumMoves() + 1;
-        }
-        return numMoves;
+        return previous == null ? 0 : previous.getNumMoves() + 1;
     }
 
     public Set<Point> getReachablePositions() {
@@ -123,7 +100,24 @@ public class State {
     }
 
     public List<Entry<Direction, Box>> getAvailableMoves() {
-        return availableMoves;
+        List<Entry<Direction, Box>> moves = new LinkedList<Entry<Direction, Box>>();
+
+        for (Point from : getReachablePositions()) {
+            for (Box box : getBoxes()) {
+                Point p = box.getPosition();
+                int dx = p.x-from.x;
+                int dy = p.y-from.y;
+
+                if (((dx == -1 || dx == 1) && dy == 0) ||
+                        ((dy == -1 || dy == 1) && dx == 0)) {
+                    Point to = new Point(from.x+2*dx, from.y+2*dy);
+                    if (!map.isWall(to) && isFree(to))
+                        moves.add(new SimpleEntry<Direction, Box>(
+                                    Direction.getDirection(dx, dy), box));
+                }
+            }
+        }
+        return moves;
     }
 
     /*
@@ -347,21 +341,27 @@ public class State {
 
     @Override
     public String toString() {
-        StringBuffer buffer = new StringBuffer(40 +
-                map.getNumRows()*map.getNumCols());
+        StringBuffer buffer = new StringBuffer(map.getNumRows()*map.getNumCols());
 
-        buffer.append(String.format("id: %d\n", hashCode()));
-        //buffer.append(String.format("trapped? %b\n", isTrapped()));
-        buffer.append(String.format("dist^2: %d\n", getAvgGoalDist()));
+        buffer.append(String.format("hash: %d\n", hashCode()));
+        buffer.append(String.format("trapped? %b\n", isTrapped()));
+        buffer.append(String.format("dist: %d\n", getGoalDistance())); 
+        buffer.append(String.format("bird dist^2: %d\n", getAvgGoalDist()));
         
+        int numGoal = 0;
         int numLocked = 0;
-        for (Box box : boxes)
-            if (!map.isGoal(box.getPosition()) && boxIsLocked(box))
+        for (Box box : boxes) {
+            if (boxIsLocked(box))
                 numLocked++;
+            if (map.isGoal(box.getPosition()))
+                numGoal++;
+        }
 
         buffer.append(String.format("locked: %d\n", numLocked));
+        buffer.append(String.format("in goal: %d\n", numGoal));
 
         for (int i = 0; i < map.getNumRows(); i++) {
+            buffer.append('\n');
             for (int j = 0; j < map.getNumCols(); j++) {
                 Point p = new Point(j, i);
                 if (map.isWall(p)) {
@@ -374,10 +374,9 @@ public class State {
                     buffer.append((reachablePositions.contains(p) ? '/' : ' '));
                 }
             }
-            buffer.append('\n');
         }
 
-        return "\n" + buffer.toString();
+        return buffer.toString();
     }
 
     public String statePath() {
@@ -502,13 +501,11 @@ public class State {
     }
 
     public int getAvgGoalDist() {
-        if (goalDist < 0) {
-            goalDist = 0;
-            for (Box box : boxes) {
-                for (Point goalPoint : map.getGoals()) {
-                    goalDist += (int)Math.pow(box.getPosition().x - goalPoint.x, 2)
-                              + (int)Math.pow(box.getPosition().y - goalPoint.y, 2);
-                }
+        int goalDist = 0;
+        for (Box box : boxes) {
+            for (Point goalPoint : map.getGoals()) {
+                goalDist += (int)Math.pow(box.getPosition().x - goalPoint.x, 2)
+                          + (int)Math.pow(box.getPosition().y - goalPoint.y, 2);
             }
         }
         return goalDist;

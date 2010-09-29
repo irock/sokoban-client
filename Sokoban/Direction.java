@@ -20,4 +20,11 @@ public enum Direction {
     public String toString() {
         return rep;
     }
+
+    public static Direction getDirection(int dx, int dy) {
+        for (Direction d : values())
+            if (d.dx == dx && d.dy == dy)
+                return d;
+        return null;
+    }
 };
