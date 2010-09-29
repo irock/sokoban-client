@@ -183,7 +183,7 @@ public class State {
         dst.translate(direction.dx, direction.dy);
 
         box.setPosition(dst);
-        boolean trapped = boxIsTrapped(box);
+        boolean trapped = isTrapped();
         box.setPosition(src);
 
         return trapped;

@@ -120,18 +120,20 @@ public class Solver {
                         numExpanded, numInspected, curState.getNumDone());
 
             for (Entry<Direction, Box> move : curState.getAvailableMoves()) {
-                State nextState = State.getStateAfterMove(curState, move);
-                numInspected++;
+                if (!curState.wouldBeTrapped(move.getKey(), move.getValue())) {
+                    State nextState = State.getStateAfterMove(curState, move);
+                    numInspected++;
 
-                if (!visited.contains(nextState) && !nextState.isTrapped()) {
-                    if (nextState.goalReached()) {
-                        endState = nextState;
-                        System.out.println();
-                        return numInspected;
+                    if (!visited.contains(nextState)) {
+                        if (nextState.goalReached()) {
+                            endState = nextState;
+                            System.out.println();
+                            return numInspected;
+                        }
+                        queue.add(nextState);
                     }
-                    queue.add(nextState);
+                    visited.add(nextState);
                 }
-                visited.add(nextState);
             }
         }
         System.out.println();
@@ -179,7 +181,7 @@ public class Solver {
         }
 
         if (printPuzzle)
-            System.out.println(mapString);
+            System.out.print(mapString);
 
         Solver solver = new Solver(mapString);
 
@@ -205,18 +207,14 @@ public class Solver {
                     System.out.println(result);
                 } catch (IOException e) { }
             }
-        }
+        } else
+            System.out.println("No solution found.");
 
         if (useServer) {
             try {
                 socket.close();
             } catch (IOException e) { }
         }
-
-        if (num == 0)
-            System.out.println("No solution found                             ");
-        else
-            System.out.printf("Total number of generated states: %d\n", num);
 
         System.out.printf("time: %d\n", System.currentTimeMillis()-start);
     }
