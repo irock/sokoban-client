@@ -256,8 +256,9 @@ public class State {
             return false;
 
         State state = (State) o;
-        for (Point box : boxes)
-            if (!state.hasBox(box))
+        /* Use the fact that the boxes are ordered. */
+        for (int i = 0; i < boxes.length; i++)
+            if (!boxes[i].equals(state.boxes[i]))
                 return false;
 
         return state.getMinPosition().equals(getMinPosition());
