@@ -21,11 +21,11 @@ public class Solver {
      * Tells whether the state path should be written to stdout when a path is
      * found.
      */
-    static boolean printStatePath = false;
+    static boolean printStatePath = true;
 
     /**
-     * Tells whether a path of directions should be generated and written when
-     * a path is found. This applies both to stdout and server.
+     * Tells whether a path of directions should be written to stdout when
+     * a path is found.
      */
     static boolean printDirectionPath = false;
 
@@ -46,10 +46,14 @@ public class Solver {
     static boolean useServer = true;
 
     /**
-     * The maximum number of searches to do. After this number of expanded
-     * nodes, the search is considered failed.
+     * The time limit for a search.
      */
-    static int searchLimit = 50000;
+    static int searchLimit = 240000;
+
+    /**
+     * The interval to wait between check of time and prints.
+     */
+    static int interval = 200;
 
     /**
      * The map to solve.
@@ -85,12 +89,17 @@ public class Solver {
     }
 
     /**
+     * @return the end state of the map.
+     */
+    public State getEndState() {
+        return endState;
+    }
+
+    /**
      * Do a breadth first search for a solution.
      *
      * @param heuristic The heuristic to use.
-     * @return the number of expanded nodes before a solution was found,
-     * -1 if no solution was found in time and 0 if the search tree got
-     *  exhausted before a solution was found.
+     * @return the number of expanded nodes.
      */
     public int breadthFirstSearch(Comparator<State> heuristic) {
         int numExpanded = 0;
@@ -102,12 +111,26 @@ public class Solver {
         queue.add(startState);
         visited.add(startState);
 
-        while (!queue.isEmpty() && numExpanded < searchLimit) {
+        int i = 0;
+        long start = System.currentTimeMillis();
+
+        while (!queue.isEmpty()) {
             State curState = queue.poll();
+
+            if (numExpanded == 1 || i == interval) {
+                long time = System.currentTimeMillis() - start;
+
+                if (printProgress)
+                    System.out.printf("expanded: %6d, queue: %6d, num " +
+                            "filled: %2d, time: %2.2f s\r", numExpanded,
+                            queue.size(), curState.getNumBoxesInGoal(),
+                            (float)time/1000);
+                if (time >= searchLimit)
+                    break;
+                i = 0;
+            }
+            i++;
             numExpanded++;
-            if (printProgress)
-                System.out.printf("expanded: %6d, inspected: %6d, num filled: %2d\r",
-                        numExpanded, numInspected, curState.getNumBoxesInGoal());
 
             for (Entry<Direction, Point> move : curState.getAvailableMoves()) {
                 State nextState = State.getStateAfterMove(curState, move);
@@ -116,8 +139,9 @@ public class Solver {
                 if (!visited.contains(nextState)) {
                     if (nextState.goalReached()) {
                         endState = nextState;
-                        System.out.println();
-                        return numInspected;
+                        if (printProgress)
+                            System.out.println();
+                        return numExpanded;
                     }
                     queue.add(nextState);
                     visited.add(nextState);
@@ -127,7 +151,7 @@ public class Solver {
 
         if (printProgress)
             System.out.println();
-        return queue.isEmpty() ? 0 : -1;
+        return numExpanded;
     }
 
     /**
@@ -186,33 +210,34 @@ public class Solver {
         Heuristics.MultipleHeuristic heuristic =
             new Heuristics.MultipleHeuristic();
 
-        heuristic.add(new Heuristics.MaxNumDone());
-        heuristic.add(new Heuristics.MinStepsFromGoal());
+        heuristic.add(new Heuristics.MaxNumDone(), 5000, 0);
+        heuristic.add(new Heuristics.MinStepsFromGoal(), 8000, 0);
 
         long time = System.currentTimeMillis();
-        int num = solver.breadthFirstSearch(heuristic);
+        long num = solver.breadthFirstSearch(heuristic);
         time = System.currentTimeMillis() - time;
 
-        if (solver.endState != null) {
+        if (solver.getEndState() != null) {
             if (printStatePath)
-                System.out.println(solver.endState.statePath());
+                System.out.println(solver.getEndState().statePath());
 
             if (printDirectionPath) {
-                for (Direction d : solver.endState.directionPath())
+                for (Direction d : solver.getEndState().directionPath())
                     System.out.print(d);
                 System.out.println();
             }
 
             if (useServer) {
-                for (Direction d : solver.endState.directionPath())
+                for (Direction d : solver.getEndState().directionPath())
                     out.print(d);
                 out.println();
                 try {
                     String result = in.readLine();
-                    System.out.println(result);
+                    if (printPuzzle)
+                        System.out.println(result);
                 } catch (IOException e) { }
             }
-        } else
+        } else if (printPuzzle)
             System.out.println("No solution found.");
 
         if (useServer) {
@@ -221,6 +246,11 @@ public class Solver {
             } catch (IOException e) { }
         }
 
-        System.out.printf("time: %d\n", time);
+        if (printPuzzle) {
+            System.out.printf("num expanded: %d\n", num);
+            System.out.printf("time: %d\n", time);
+        }
+
+        System.exit(solver.getEndState() == null ? 1 : 0);
     }
 }

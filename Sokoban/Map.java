@@ -99,31 +99,87 @@ public class Map {
     }
 
     /**
+     * Check if a point in the map is a wall.
+     *
+     * @param p The point to check.
      * @return true iff the given point is a wall.
      */
     public boolean isWall(Point p) {
-        return matrix[p.y][p.x] == Square.WALL;
+        return isWall(p.x, p.y);
     }
 
     /**
+     * Check if a point in the map is a wall.
+     *
+     * @param x The x coordinate of the point
+     * @param y The y coordinate of the point.
+     * @return true iff the given point is a wall.
+     */
+    public boolean isWall(int x, int y) {
+        return matrix[y][x] == Square.WALL;
+    }
+
+    /**
+     * Check if a given point in the map is a goal square.
+     *
+     * @param p The point to check.
      * @return true iff the given point is a goal.
      */
     public boolean isGoal(Point p) {
-        return matrix[p.y][p.x] == Square.GOAL;
+        return isGoal(p.x, p.y);
     }
 
     /**
+     * Check if a given point in the map is a goal square.
+     *
+     * @param x The x coordinate of the point.
+     * @param y The y coordinate of the point.
+     * @return true iff the given point is a goal square.
+     */
+    public boolean isGoal(int x, int y) {
+        return matrix[y][x] == Square.GOAL;
+    }
+
+    /**
+     * Check if a given point in the map is a forbidden square.
+     *
+     * @param p The point to check.
      * @return true iff the given point is a forbidden square.
      */
     public boolean isForbidden(Point p) {
-        return matrix[p.y][p.x] == Square.FORBIDDEN;
+        return isForbidden(p.x, p.y);
     }
 
     /**
+     * Check if a given point in the map is a forbidden square.
+     *
+     * @param x The x coordinate of the point.
+     * @param y The y coordinate of the point.
+     * @return true iff the given point is a forbidden square.
+     */
+    public boolean isForbidden(int x, int y) {
+        return matrix[y][x] == Square.FORBIDDEN;
+    }
+
+    /**
+     * Check if a given point in the map is free.
+     *
+     * @param p The point to check.
      * @return true iff the given point is neither a goal nor a wall.
      */
     public boolean isFree(Point p) {
-        return matrix[p.y][p.x] == Square.NONE;
+        return isFree(p.x, p.y);
+    }
+
+    /**
+     * Check if a given point in the map is free.
+     *
+     * @param x The x coordinate of the point.
+     * @param y The y coordinate of the point.
+     * @return true iff the given point is neither a goal nor a wall.
+     */
+    public boolean isFree(int x, int y) {
+        return matrix[y][x] == Square.NONE;
     }
 
     /**
@@ -136,50 +192,48 @@ public class Map {
     private Set<Point> findForbiddenSquares() {
         Set<Point> forbidden = new HashSet<Point>();
 
-        for (int y = 0; y < getNumRows(); y++)
-            for (int x = 0; x < getNumCols(); x++) {
-                Point box = new Point(x, y);
+        Point box = new Point(0, 0);
+        for (int y = 1; y < getNumRows()-1; y++)
+            for (int x = 1; x < getNumCols()-1; x++) {
+                box.set(x, y);
 
                 if (isWall(box) || forbidden.contains(box))
                     continue;
 
-                for (int i = 0; i < Direction.values().length/2; i++) {
+                for (int i = 0; i < Direction.getArray().length/2; i++) {
                     boolean trapped = true;
 
-                    for (int j = i; j < Direction.values().length;
-                            j += Direction.values().length/2) {
-                        Direction forward = Direction.values()[j];
+                    for (int j = i; j < Direction.getArray().length;
+                            j += Direction.getArray().length/2) {
+                        Direction forward = Direction.getArray()[j];
 
-                        Direction up = Direction.values()[(forward.ordinal() + 1) %
-                            Direction.values().length];
-                        Direction down = Direction.values()[(forward.ordinal() - 1 +
-                                Direction.values().length) %
-                            Direction.values().length];
-
-                        Point current = new Point(box);
-                        Point front = new Point(box.x + forward.dx,
-                                box.y + forward.dy);
-                        Point above = new Point(box.x + up.dx, box.y + up.dy);
-                        Point below = new Point(box.x + down.dx, box.y + down.dy);
+                        Direction up = Direction.getArray()[(forward.ordinal() + 1) %
+                            Direction.getArray().length];
+                        Direction down = Direction.getArray()[(forward.ordinal() - 1 +
+                                Direction.getArray().length) %
+                            Direction.getArray().length];
 
                         /* Check if it's have a corner. */
-                        if (isWall(above) && isWall(front) && !isGoal(current)) {
+                        if (isWall(box.x + up.dx, box.y + up.dy) &&
+                                isWall(box.x + forward.dx, box.y +
+                                    forward.dy) && !isGoal(box)) {
                             trapped = true;
                             break;
                         }
 
-                        while (trapped && !isWall(current)) {
-                            if ((!isWall(above) && !isWall(below)) || isGoal(current))
+                        while (trapped && !isWall(box)) {
+                            if ((!isWall(box.x + up.dx, box.y + up.dy) &&
+                                        !isWall(box.x + down.dx, box.y +
+                                            down.dy)) || isGoal(box))
                                 trapped = false;
 
-                            current.translate(forward.dx, forward.dy);
-                            front.translate(forward.dx, forward.dy);
-                            above.translate(forward.dx, forward.dy);
-                            below.translate(forward.dx, forward.dy);
+                            box.translate(forward.dx, forward.dy);
                         }
+
+                        box.set(x, y);
                     }
                     if (trapped)
-                        forbidden.add(box);
+                        forbidden.add(new Point(box));
                 }
             }
         return forbidden;
@@ -218,7 +272,7 @@ public class Map {
         Square[][] matrix = new Square[row][maxCol];
         List<Point> boxes = new LinkedList<Point>();
 
-        Point start = new Point(0, 0);
+        Point start = null;
         col = 0;
         row = 0;
 

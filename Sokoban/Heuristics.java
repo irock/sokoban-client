@@ -3,11 +3,40 @@ package Sokoban;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Comparator;
+import java.util.Map.Entry;
+import java.util.AbstractMap.SimpleEntry;
 
 /**
  * A collection of heuristics that can be used to solve Sokoban games.
  */
 public class Heuristics {
+    /**
+     * A heuristic forcing states to be processed after some time.
+     */
+    public static class MinId implements Comparator<State> {
+        /**
+         * The minimum distance between two states to compare them.
+         */
+        int range;
+
+        /**
+         * Create a new MinId heuristic.
+         *
+         * @param range The minimum difference in id of two states to compare
+         * them.
+         */
+        public MinId(int range) {
+            this.range = range;
+        }
+
+        public int compare(State a, State b) {
+            int tmp = a.getId() - b.getId();
+            if (Math.abs(tmp) < range)
+                return 0;
+            return tmp;
+        }
+    }
+
     /**
      * A heuristic expanding the states with the most boxes in a goal first.
      */
@@ -28,8 +57,17 @@ public class Heuristics {
     }
 
     /**
-     * A heuristic comparing the minimum number of box moves from the goal in
-     * each state.
+     * A heuristic comparing the states on basis of the minimum real distance
+     * for each box to goal squares.
+     */
+    public static class MinGoalDistance implements Comparator<State> {
+        public int compare(State a, State b) {
+            return a.getGoalDistance() - b.getGoalDistance();
+        }
+    }
+
+    /**
+     * A heuristic comparing the number box moves so far in each state.
      */
     public static class MinNumMoves implements Comparator<State> {
         public int compare(State a, State b) {
@@ -43,33 +81,69 @@ public class Heuristics {
      */
     public static class MultipleHeuristic implements Comparator<State> {
         /**
+         * For describing when a specific heuristic should be applied.
+         */
+        private class Range {
+            /**
+             * At what comparison the heuristic should start.
+             */
+            int from;
+
+            /**
+             * At what comparison the heuristic should end.
+             */
+            int to;
+
+            /**
+             * Create a new Range.
+             *
+             * @param from The start of the range.
+             * @param to The end of the range.
+             */
+            public Range(int from, int to) {
+                this.from = from;
+                this.to = to;
+            }
+        }
+
+        /**
          * The list of heuristics to test.
          */
-        List<Comparator<State>> comparators;
+        List<Entry<Range, Comparator<State>>> comparators;
 
         /**
          * Create a new MultipleHeuristic.
          */
         public MultipleHeuristic() {
-            comparators = new LinkedList<Comparator<State>>();
+            comparators = new LinkedList<Entry<Range, Comparator<State>>>();
         }
 
         /**
          * Add a heuristic to the list of heuristics to test.
          *
          * @param heuristic The heuristic to add.
+         * @param from At what state id the heuristic should begin.
+         * @param to At what state id the heuristic should end.
          */
-        public void add(Comparator<State> heuristic) {
-            comparators.add(heuristic);
+        public void add(Comparator<State> heuristic, int from, int to) {
+            comparators.add(new SimpleEntry<Range, Comparator<State>>(
+                        new Range(from, to), heuristic));
         }
 
         public int compare(State a, State b) {
-            for (Comparator<State> comparator : comparators) {
+            for (Entry<Range, Comparator<State>> entry : comparators) {
+                Range range = entry.getKey();
+                if (range.from > a.getId() || range.from > b.getId() ||
+                        (range.to != 0 && (range.to < a.getId() ||
+                                           range.to < b.getId())))
+                    continue;
+
+                Comparator<State> comparator = entry.getValue();
                 int tmp = comparator.compare(a, b);
                 if (tmp != 0)
                     return tmp;
             }
-            return 0;
+            return a.getId() - b.getId();
         }
     }
 

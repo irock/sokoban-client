@@ -1,5 +1,6 @@
 package Sokoban;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.List;
 import java.util.Queue;
@@ -41,10 +42,31 @@ public class State {
     private Point min;
 
     /**
+     * A unique number for this state.
+     */
+    private int id;
+
+    /**
+     * The number of states created in total.
+     */
+    private static int totalNum = 0;
+
+    /**
+     * A temporary point. Used for saving heap memory.
+     */
+    private static Point tmp = new Point(0, 0);
+
+    /**
      * Used for remembering old result of getStepsFromGoal() since that method
      * is quite expensive.
      */
     int stepsFromGoal;
+
+    /**
+     * Used for remembering old result of getGoalDistance() since that method
+     * is quite expensive.
+     */
+    int goalDistance;
 
     /**
      * Create a new State.
@@ -83,6 +105,10 @@ public class State {
         this.previous = previous;
         this.start = start;
         this.stepsFromGoal = -1;
+        this.goalDistance = -1;
+        this.id = totalNum++;
+
+        Arrays.sort(this.boxes);
     }
 
     @Override
@@ -95,29 +121,41 @@ public class State {
     }
 
     /**
+     * @return the unique id of this state.
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
      * Getter for the reachable positions in this state. Lazy evaluation is
      * used.
      *
      * @return the set of reachable positions in this state.
      */
-    private Set<Point> getReachablePositions() {
+    private TreeSet<Point> getReachablePositions() {
         Queue<Point> queue = new LinkedList<Point>();
-        Set<Point> reachablePositions = new TreeSet<Point>();
+        TreeSet<Point> reachablePositions = new TreeSet<Point>();
 
         queue.add(start);
         reachablePositions.add(start);
 
         while (!queue.isEmpty()) {
             Point current = queue.poll();
-            for (Direction d : Direction.values()) {
-                Point p = new Point(current.x + d.dx, current.y + d.dy);
-                if (!map.isWall(p) && !hasBox(p) &&
-                        !reachablePositions.contains(p)) {
-                    queue.add(p);
-                    reachablePositions.add(p);
+            for (Direction d : Direction.getArray()) {
+                tmp.set(current.x + d.dx, current.y + d.dy);
+                if (!map.isWall(tmp) && !hasBox(tmp) &&
+                        !reachablePositions.contains(tmp)) {
+                    queue.add(tmp);
+                    reachablePositions.add(tmp);
+                    tmp = new Point(0, 0);
                 }
             }
         }
+
+        if (min == null)
+            min = getMinPosition(reachablePositions);
+
         return reachablePositions;
     }
 
@@ -128,10 +166,18 @@ public class State {
      */
     public Point getMinPosition() {
         if (min == null)
-            for (Point p : getReachablePositions())
-                if (min == null || p.x < min.x || (p.x == min.x && p.y < min.y))
-                    min = p;
+            min = getMinPosition(getReachablePositions());
         return min;
+    }
+
+    /**
+     * Find the minimum position in a set of reachable positions.
+     *
+     * @return the minimum position reachable in the given set.
+     */
+    private Point getMinPosition(TreeSet<Point> reachablePositions) {
+        tmp.set(0, 0);
+        return reachablePositions.ceiling(tmp);
     }
 
     /**
@@ -169,19 +215,16 @@ public class State {
         List<Entry<Direction, Point>> moves =
             new LinkedList<Entry<Direction, Point>>();
 
-        for (Point from : getReachablePositions())
-            for (Point box : boxes) {
-                int dx = box.x-from.x;
-                int dy = box.y-from.y;
+        Set<Point> reachable = getReachablePositions();
 
-                if (((dx == -1 || dx == 1) && dy == 0) ||
-                        ((dy == -1 || dy == 1) && dx == 0)) {
-                    Direction direction = Direction.getDirection(dx, dy);
-                    Point to = new Point(box.x+dx, box.y+dy);
-                    if (!map.isWall(to) && !map.isForbidden(to) && !hasBox(to) &&
-                            !wouldLock(box, direction))
-                        moves.add(new SimpleEntry<Direction, Point>(
-                                    Direction.getDirection(dx, dy), box));
+        for (Point box : boxes)
+            for (Direction d : Direction.getArray()) {
+                tmp.set(box.x - d.dx, box.y - d.dy);
+                if (reachable.contains(tmp)) {
+                    tmp.translate(2 * d.dx, 2 * d.dy);
+                    if (!map.isWall(tmp) && !map.isForbidden(tmp) &&
+                            !hasBox(tmp) && !wouldLock(box, d))
+                        moves.add(new SimpleEntry<Direction, Point>(d, box));
                 }
             }
         return moves;
@@ -264,16 +307,19 @@ public class State {
      * @return true iff the box is locked.
      */
     private boolean boxIsLocked(Point box, Set<Point> checkedBoxes) {
-        int numDirections = Direction.values().length;
+        int numDirections = Direction.getArray().length;
         checkedBoxes.add(box);
+
+        Point p1 = new Point(0, 0);
+        Point p2 = new Point(0, 0);
 
         for (int i = 0; i < numDirections; i++) {
             Set<Point> tmp = new HashSet<Point>(checkedBoxes);
-            Direction d1 = Direction.values()[i];
-            Direction d2 = Direction.values()[(i+1)%numDirections];
-            Point p1 = new Point(box.x+d1.dx, box.y+d1.dy);
-            Point p2 = new Point(box.x+d2.dx, box.y+d2.dy);
+            Direction d1 = Direction.getArray()[i];
+            Direction d2 = Direction.getArray()[(i+1)%numDirections];
 
+            p1.set(box.x+d1.dx, box.y+d1.dy);
+            p2.set(box.x+d2.dx, box.y+d2.dy);
             if (isBlocked(p1, tmp) && isBlocked(p2, tmp)) {
                 checkedBoxes.addAll(tmp);
                 return true;
@@ -303,30 +349,33 @@ public class State {
      * @return the minimal number of moves needed to move all boxes to a goal.
      */
     public int getGoalDistance() {
-        int total = 0;
-        for (Point box : boxes) {
-            Queue<Point> queue = new LinkedList<Point>();
-            int[][] visited = new int[map.getNumRows()][map.getNumCols()];
+        if (goalDistance == -1) {
+            goalDistance = 0;
+            for (Point box : boxes) {
+                Queue<Point> queue = new LinkedList<Point>();
+                int[][] visited = new int[map.getNumRows()][map.getNumCols()];
 
-            queue.add(box);
+                queue.add(box);
 
-            while (!queue.isEmpty()) {
-                Point current = queue.poll();
-                if (map.isGoal(current)) {
-                    total += visited[current.y][current.x];
-                    break;
-                }
+                while (!queue.isEmpty()) {
+                    Point current = queue.poll();
+                    if (map.isGoal(current)) {
+                        goalDistance += visited[current.y][current.x];
+                        break;
+                    }
 
-                for (Direction d : Direction.values()) {
-                    Point p = new Point(current.x + d.dx, current.y + d.dy);
-                    if (visited[p.y][p.x] == 0 && !map.isWall(p)) {
-                        queue.add(p);
-                        visited[p.y][p.x] = visited[current.y][current.x]+1;
+                    for (Direction d : Direction.getArray()) {
+                        int x = current.x + d.dx;
+                        int y = current.y + d.dy;
+                        if (visited[y][x] == 0 && !map.isWall(x, y)) {
+                            queue.add(new Point(x, y));
+                            visited[y][x] = visited[current.y][current.x]+1;
+                        }
                     }
                 }
             }
         }
-        return total;
+        return goalDistance;
     }
 
     /**
@@ -349,11 +398,12 @@ public class State {
                     break;
                 }
 
-                for (Direction d : Direction.values()) {
-                    Point p = new Point(current.x + d.dx, current.y + d.dy);
-                    if (visited[p.y][p.x] == 0 && !map.isWall(p)) {
-                        queue.add(p);
-                        visited[p.y][p.x] = visited[current.y][current.x] + 1;
+                for (Direction d : Direction.getArray()) {
+                    int x = current.x + d.dx;
+                    int y = current.y + d.dy;
+                    if (visited[y][x] == 0 && !map.isWall(x, y)) {
+                        queue.add(new Point(x, y));
+                        visited[y][x] = visited[current.y][current.x] + 1;
                     }
                 }
             }
@@ -376,19 +426,22 @@ public class State {
         StringBuffer buffer = new StringBuffer(map.getNumRows()*map.getNumCols());
         Set<Point> reachable = getReachablePositions();
 
-        for (int i = 0; i < map.getNumRows(); i++) {
-            for (int j = 0; j < map.getNumCols(); j++) {
-                Point p = new Point(j, i);
-                if (map.isWall(p))
+        buffer.append(String.format("num done: %d\n", getNumBoxesInGoal()));
+        buffer.append(String.format("steps from goal: %d\n", getStepsFromGoal()));
+
+        for (int y = 0; y < map.getNumRows(); y++) {
+            for (int x = 0; x < map.getNumCols(); x++) {
+                tmp.set(x, y);
+                if (map.isWall(tmp))
                     buffer.append('#');
-                else if (hasBox(p))
-                    buffer.append((map.isGoal(p) ? '*' : '$'));
-                else if (map.isGoal(p))
-                    buffer.append((reachable.contains(p) ? '\\' : '.'));
-                else if (map.isForbidden(p))
-                    buffer.append((reachable.contains(p) ? '+' : 'x'));
+                else if (hasBox(tmp))
+                    buffer.append((map.isGoal(tmp) ? '*' : '$'));
+                else if (map.isGoal(tmp))
+                    buffer.append((reachable.contains(tmp) ? '\\' : '.'));
+                else if (map.isForbidden(tmp))
+                    buffer.append((reachable.contains(tmp) ? '+' : 'x'));
                 else
-                    buffer.append((reachable.contains(p) ? '/' : ' '));
+                    buffer.append((reachable.contains(tmp) ? '/' : ' '));
             }
             buffer.append('\n');
         }
@@ -442,21 +495,15 @@ public class State {
                 break;
             }
 
-        Direction direction = null;
         int dx = to.x - from.x;
         int dy = to.y - from.y;
+        directions.addAll(pathSearch(start, new Point(from.x - dx, from.y - dy)));
 
-        for (Direction d : Direction.values())
+        for (Direction d : Direction.getArray())
             if (d.dx == dx && d.dy == dy) {
-                direction = d;
+                directions.add(d);
                 break;
             }
-
-        Point target = new Point(from);
-        target.translate(-dx, -dy);
-
-        directions.addAll(pathSearch(start, target));
-        directions.add(direction);
 
         return directions;
     }
@@ -491,12 +538,13 @@ public class State {
                 return directions;
             }
 
-            for (Direction d : Direction.values()) {
-                Point p = new Point(current.x + d.dx, current.y + d.dy);
-                if (!map.isWall(p) && !hasBox(p) && !visited.contains(p)) {
-                    queue.add(p);
-                    visited.add(p);
-                    traceback.put(p, new SimpleEntry<Point, Direction>(current, d));
+            for (Direction d : Direction.getArray()) {
+                tmp.set(current.x + d.dx, current.y + d.dy);
+                if (!map.isWall(tmp) && !hasBox(tmp) && !visited.contains(tmp)) {
+                    queue.add(tmp);
+                    visited.add(tmp);
+                    traceback.put(tmp, new SimpleEntry<Point, Direction>(current, d));
+                    tmp = new Point(0, 0);
                 }
             }
         }
@@ -516,9 +564,9 @@ public class State {
      * definition.
      */
     public Point getTunnelEndPoint(Point start, Direction direction) {
-        int numDirections = Direction.values().length;
-        Direction left = Direction.values()[(direction.ordinal()-1)%numDirections];
-        Direction right = Direction.values()[(direction.ordinal()+1)%numDirections];
+        int numDirections = Direction.getArray().length;
+        Direction left = Direction.getArray()[(direction.ordinal()-1)%numDirections];
+        Direction right = Direction.getArray()[(direction.ordinal()+1)%numDirections];
         Point last = start;
         Point current = new Point(start);
         Point goal = null;

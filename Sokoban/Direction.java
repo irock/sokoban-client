@@ -28,6 +28,11 @@ public enum Direction {
     final String rep;
 
     /**
+     * Holds an array containing all directions. Saves memory.
+     */
+    private static Direction[] dirs = null;
+
+    /**
      * Create a new Direction.
      *
      * @param dx The movement in x-ways this direction corresponds to.
@@ -53,9 +58,20 @@ public enum Direction {
      * @return the direction found, or null if no such direction was found.
      */
     public static Direction getDirection(int dx, int dy) {
-        for (Direction d : values())
+        for (Direction d : getArray())
             if (d.dx == dx && d.dy == dy)
                 return d;
         return null;
+    }
+
+    /**
+     * A static version of values(). Do not alter the returned arrray.
+     *
+     * @return an array containing the available directions.
+     */
+    public static Direction[] getArray() {
+        if (dirs == null)
+            dirs = values();
+        return dirs;
     }
 }
