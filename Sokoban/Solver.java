@@ -1,15 +1,10 @@
 package Sokoban;
 
-import java.awt.Point;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Random;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.HashSet;
@@ -17,96 +12,91 @@ import java.util.Queue;
 import java.util.PriorityQueue;
 import java.util.Comparator;
 
-// Unsolved puzzles with numDone+stepsFromGoal: 33, 52, 56, 66, 70, 72, 73, 77
-
+/**
+ * A class used for solving Sokoban puzzles. This is the main class of the
+ * project.
+ */
 public class Solver {
-    public class NumDoneHeuristic implements Comparator<State> {
-        public int compare(State a, State b) {
-            return b.getNumDone() - a.getNumDone();
-        }
-    }
-
-    public class GoalDistanceHeuristic implements Comparator<State> {
-        public int compare(State a, State b) {
-            return a.getGoalDistance() - b.getGoalDistance();
-        }
-    }
-
-    public class NumMovesHeuristic implements Comparator<State> {
-        public int compare(State a, State b) {
-            return a.getNumMoves() - b.getNumMoves();
-        }
-    }
-
-    public class MultipleHeuristic implements Comparator<State> {
-        List<Comparator<State>> comparators;
-
-        public MultipleHeuristic() {
-            comparators = new LinkedList<Comparator<State>>();
-        }
-
-        public void add(Comparator<State> comparator) {
-            comparators.add(comparator);
-        }
-
-        public int compare(State a, State b) {
-            for (Comparator<State> comparator : comparators) {
-                int tmp = comparator.compare(a, b);
-                if (tmp != 0)
-                    return tmp;
-            }
-            return 0;
-        }
-    }
-
-    public class StepsFromGoalHeuristic implements Comparator<State> {
-        public int compare(State a, State b) {
-            return a.getStepsFromGoal() - b.getStepsFromGoal();
-        }
-    }
-
-    public class RandomHeuristic implements Comparator<State> {
-        Random random;
-        public RandomHeuristic() {
-            random = new Random();
-        }
-
-        public int compare(State a, State b) {
-            return random.nextBoolean() ? -1 : 1;
-        }
-    }
-
+    /**
+     * Tells whether the state path should be written to stdout when a path is
+     * found.
+     */
     static boolean printStatePath = false;
-    static boolean printDirectionPath = true;
+
+    /**
+     * Tells whether a path of directions should be generated and written when
+     * a path is found. This applies both to stdout and server.
+     */
+    static boolean printDirectionPath = false;
+
+    /**
+     * Tells whether the puzzle should be written to stdout upon start.
+     */
     static boolean printPuzzle = true;
+
+    /**
+     * Tells whether a progress meter should be displayed.
+     */
     static boolean printProgress = true;
+
+    /**
+     * Tells whether the puzzle server should be used. If set to false, offline
+     * puzzles are used instead.
+     */
     static boolean useServer = true;
+
+    /**
+     * The maximum number of searches to do. After this number of expanded
+     * nodes, the search is considered failed.
+     */
     static int searchLimit = 50000;
 
+    /**
+     * The map to solve.
+     */
     Map map;
+
+    /**
+     * The start state of the map.
+     */
     State startState;
+
+    /**
+     * The end state of the map. If no solution has been found, it is null.
+     */
     State endState;
 
+    /**
+     * Create a new Solver.
+     *
+     * @param mapString A string representation of a map.
+     */
     public Solver(String mapString) {
         map = Map.parse(mapString);
         startState = new State(map.getStart(), map.getBoxes(), map);
         endState = null;
     }
 
-    public int breadthFirstSearch() {
+    /**
+     * @return the start state of the map.
+     */
+    public State getStartState() {
+        return startState;
+    }
+
+    /**
+     * Do a breadth first search for a solution.
+     *
+     * @param heuristic The heuristic to use.
+     * @return the number of expanded nodes before a solution was found,
+     * -1 if no solution was found in time and 0 if the search tree got
+     *  exhausted before a solution was found.
+     */
+    public int breadthFirstSearch(Comparator<State> heuristic) {
         int numExpanded = 0;
         int numInspected = 0;
 
-        Comparator<State> heuristic1 = new NumDoneHeuristic();
-        Comparator<State> heuristic2 = new GoalDistanceHeuristic();
-        Comparator<State> heuristic3 = new NumMovesHeuristic();
-        MultipleHeuristic heuristic4 = new MultipleHeuristic();
-        Comparator<State> heuristic5 = new RandomHeuristic();
-        Comparator<State> heuristic6 = new StepsFromGoalHeuristic();
-        heuristic4.add(heuristic1);
-        heuristic4.add(heuristic6);
-
-        Queue<State> queue = new PriorityQueue<State>(10000, heuristic4);
+        Queue<State> queue = new PriorityQueue<State>(1000, heuristic);
         Set<State> visited = new HashSet<State>();
 
         queue.add(startState);
@@ -117,38 +107,40 @@ public class Solver {
             numExpanded++;
             if (printProgress)
                 System.out.printf("expanded: %6d, inspected: %6d, num filled: %2d\r",
-                        numExpanded, numInspected, curState.getNumDone());
+                        numExpanded, numInspected, curState.getNumBoxesInGoal());
 
-            for (Entry<Direction, Box> move : curState.getAvailableMoves()) {
-                if (!curState.wouldBeTrapped(move.getKey(), move.getValue())) {
-                    State nextState = State.getStateAfterMove(curState, move);
-                    numInspected++;
+            for (Entry<Direction, Point> move : curState.getAvailableMoves()) {
+                State nextState = State.getStateAfterMove(curState, move);
+                numInspected++;
 
-                    if (!visited.contains(nextState)) {
-                        if (nextState.goalReached()) {
-                            endState = nextState;
-                            System.out.println();
-                            return numInspected;
-                        }
-                        queue.add(nextState);
-                        visited.add(nextState);
+                if (!visited.contains(nextState)) {
+                    if (nextState.goalReached()) {
+                        endState = nextState;
+                        System.out.println();
+                        return numInspected;
                     }
+                    queue.add(nextState);
+                    visited.add(nextState);
                 }
             }
         }
-        System.out.println();
-        return 0;
+
+        if (printProgress)
+            System.out.println();
+        return queue.isEmpty() ? 0 : -1;
     }
 
+    /**
+     * Run the solver on the puzzle given in args[0].
+     */
     public static void main(String[] args) {
+        int puzzle;
         String mapString;
 
         if (args.length != 1) {
             System.out.println("No puzzle number specified.");
             return;
         }
-
-        int puzzle;
 
         try {
             puzzle = Integer.parseInt(args[0]);
@@ -186,13 +178,20 @@ public class Solver {
             mapString = Puzzle.getPuzzle(puzzle);
         }
 
-        if (printPuzzle)
-            System.out.print(mapString);
-
         Solver solver = new Solver(mapString);
 
-        long start = System.currentTimeMillis();
-        int num = solver.breadthFirstSearch();
+        if (printPuzzle)
+            System.out.println(solver.getStartState());
+
+        Heuristics.MultipleHeuristic heuristic =
+            new Heuristics.MultipleHeuristic();
+
+        heuristic.add(new Heuristics.MaxNumDone());
+        heuristic.add(new Heuristics.MinStepsFromGoal());
+
+        long time = System.currentTimeMillis();
+        int num = solver.breadthFirstSearch(heuristic);
+        time = System.currentTimeMillis() - time;
 
         if (solver.endState != null) {
             if (printStatePath)
@@ -222,6 +221,6 @@ public class Solver {
             } catch (IOException e) { }
         }
 
-        System.out.printf("time: %d\n", System.currentTimeMillis()-start);
+        System.out.printf("time: %d\n", time);
     }
 }

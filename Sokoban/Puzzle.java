@@ -1,7 +1,13 @@
 package Sokoban;
 
+/**
+ * A container class for offline puzzles.
+ */
 public class Puzzle {
-    public static String[] puzzles = {
+    /**
+     * The array of available puzzles.
+     */
+    private static String[] puzzles = {
         "###############\n" +
         "###     #    ##\n" +
         "#@$           #\n" +
@@ -324,7 +330,13 @@ public class Puzzle {
         "##########",
     };
 
-    public static String getPuzzle(int i) {
-        return puzzles[i];
+    /**
+     * Getter for a specific puzzle.
+     *
+     * @param number The number of the puzzle to get.
+     * @return the puzzle with the given number, if exists.
+     */
+    public static String getPuzzle(int number) {
+        return puzzles[number];
     }
 }
