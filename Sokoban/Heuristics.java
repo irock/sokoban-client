@@ -85,12 +85,12 @@ public class Heuristics {
          */
         private class Range {
             /**
-             * At what comparison the heuristic should start.
+             * At what move the heuristic should start.
              */
             int from;
 
             /**
-             * At what comparison the heuristic should end.
+             * At what move the heuristic should end.
              */
             int to;
 
@@ -122,20 +122,34 @@ public class Heuristics {
          * Add a heuristic to the list of heuristics to test.
          *
          * @param heuristic The heuristic to add.
-         * @param from At what state id the heuristic should begin.
-         * @param to At what state id the heuristic should end.
+         * @param from At what height the heuristic should begin.
+         * @param to At what height the heuristic should end.
          */
         public void add(Comparator<State> heuristic, int from, int to) {
             comparators.add(new SimpleEntry<Range, Comparator<State>>(
                         new Range(from, to), heuristic));
         }
 
+        /**
+         * @see add(Comparator<State>, int, int);
+         */
+        public void add(Comparator<State> heuristic, int from) {
+            add(heuristic, from, 0);
+        }
+
+        /**
+         * @see add(Comparator<State>, int);
+         */
+        public void add(Comparator<State> heuristic) {
+            add(heuristic, 0);
+        }
+
         public int compare(State a, State b) {
             for (Entry<Range, Comparator<State>> entry : comparators) {
                 Range range = entry.getKey();
-                if (range.from > a.getId() || range.from > b.getId() ||
-                        (range.to != 0 && (range.to < a.getId() ||
-                                           range.to < b.getId())))
+                if (range.from > a.getNumMoves() || range.from > b.getNumMoves() ||
+                        (range.to != 0 && (range.to < a.getNumMoves() ||
+                                           range.to < b.getNumMoves())))
                     continue;
 
                 Comparator<State> comparator = entry.getValue();
@@ -143,7 +157,7 @@ public class Heuristics {
                 if (tmp != 0)
                     return tmp;
             }
-            return a.getId() - b.getId();
+            return a.getNumMoves() - b.getNumMoves();
         }
     }
 

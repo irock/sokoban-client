@@ -48,7 +48,7 @@ public class Solver {
     /**
      * The time limit for a search.
      */
-    static int searchLimit = 240000;
+    static int searchLimit = 60000;
 
     /**
      * The interval to wait between check of time and prints.
@@ -198,9 +198,8 @@ public class Solver {
                 System.err.println(e.getMessage());
                 return;
             }
-        } else {
+        } else
             mapString = Puzzle.getPuzzle(puzzle);
-        }
 
         Solver solver = new Solver(mapString);
 
@@ -210,8 +209,7 @@ public class Solver {
         Heuristics.MultipleHeuristic heuristic =
             new Heuristics.MultipleHeuristic();
 
-        heuristic.add(new Heuristics.MaxNumDone(), 5000, 0);
-        heuristic.add(new Heuristics.MinStepsFromGoal(), 8000, 0);
+        heuristic.add(new Heuristics.MinGoalDistance(), 3);
 
         long time = System.currentTimeMillis();
         long num = solver.breadthFirstSearch(heuristic);
@@ -247,6 +245,9 @@ public class Solver {
         }
 
         if (printPuzzle) {
+            if (solver.getEndState() != null)
+                System.out.printf("path length: %d\n",
+                        solver.getEndState().getNumMoves());
             System.out.printf("num expanded: %d\n", num);
             System.out.printf("time: %d\n", time);
         }

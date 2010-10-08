@@ -18,7 +18,7 @@ public class Map {
      * not to be stuck.
      */
     private enum Square {
-        NONE, GOAL, WALL, FORBIDDEN
+        NONE, GOAL, WALL, FORBIDDEN, INVALID
     };
 
     /**
@@ -42,25 +42,44 @@ public class Map {
     private Square[][] matrix;
 
     /**
+     * A set of points covering the whole map, for saving memory.
+     */
+    private Point[][] points;
+
+    /**
      * Create a new Map.
      *
      * @param start The start position of the player.
      * @param matrix The map board.
+     * @param points The points covering the map.
      */
-    private Map (Point start, Square[][] matrix, List<Point> boxes) {
+    private Map (Point start, Square[][] matrix, List<Point> boxes,
+            Point[][] points) {
         this.matrix = matrix;
         this.boxes = boxes;
         this.start = start;
         this.goals = new LinkedList<Point>();
+        this.points = points;
 
         /* Find all goals in the map. */
         for (int y = 0; y < this.matrix.length; y++)
             for (int x = 0; x < this.matrix[0].length; x++)
                 if (this.matrix[y][x] == Square.GOAL)
-                    this.goals.add(new Point(x, y));
+                    this.goals.add(points[y][x]);
 
         for (Point p : findForbiddenSquares())
             matrix[p.y][p.x] = Square.FORBIDDEN;
+    }
+
+    /**
+     * Getter for map points, for saving memory.
+     *
+     * @param x The x-coordinate of the point to return.
+     * @param y The y-coordinate of the point to return.
+     * @return the point representing the given x and y coordinates.
+     */
+    public Point getPoint(int x, int y) {
+        return points[y][x];
     }
 
     /**
@@ -192,12 +211,9 @@ public class Map {
     private Set<Point> findForbiddenSquares() {
         Set<Point> forbidden = new HashSet<Point>();
 
-        Point box = new Point(0, 0);
         for (int y = 1; y < getNumRows()-1; y++)
             for (int x = 1; x < getNumCols()-1; x++) {
-                box.set(x, y);
-
-                if (isWall(box) || forbidden.contains(box))
+                if (isWall(x, y) || forbidden.contains(getPoint(x, y)))
                     continue;
 
                 for (int i = 0; i < Direction.getArray().length/2; i++) {
@@ -213,27 +229,29 @@ public class Map {
                                 Direction.getArray().length) %
                             Direction.getArray().length];
 
+                        int xx = x;
+                        int yy = y;
+
                         /* Check if it's have a corner. */
-                        if (isWall(box.x + up.dx, box.y + up.dy) &&
-                                isWall(box.x + forward.dx, box.y +
-                                    forward.dy) && !isGoal(box)) {
+                        if (isWall(xx + up.dx, yy + up.dy) &&
+                                isWall(xx + forward.dx, yy +
+                                    forward.dy) && !isGoal(x, y)) {
                             trapped = true;
                             break;
                         }
 
-                        while (trapped && !isWall(box)) {
-                            if ((!isWall(box.x + up.dx, box.y + up.dy) &&
-                                        !isWall(box.x + down.dx, box.y +
-                                            down.dy)) || isGoal(box))
+                        while (trapped && !isWall(xx, yy)) {
+                            if ((!isWall(xx + up.dx, yy + up.dy) &&
+                                        !isWall(xx + down.dx, yy +
+                                            down.dy)) || isGoal(xx, yy))
                                 trapped = false;
 
-                            box.translate(forward.dx, forward.dy);
+                            xx += forward.dx;
+                            yy += forward.dy;
                         }
-
-                        box.set(x, y);
                     }
                     if (trapped)
-                        forbidden.add(new Point(box));
+                        forbidden.add(getPoint(x, y));
                 }
             }
         return forbidden;
@@ -255,6 +273,7 @@ public class Map {
     public static Map parse(String boardString) {
         int col = 0;
         int row = 0;
+        int maxRow = 0;
         int maxCol = 0;
 
         for (byte current : boardString.getBytes()) {
@@ -269,8 +288,15 @@ public class Map {
             }
         }
 
-        Square[][] matrix = new Square[row][maxCol];
+        maxRow = row;
+
+        Square[][] matrix = new Square[maxRow][maxCol];
+        Point[][] points = new Point[maxRow][maxCol];
         List<Point> boxes = new LinkedList<Point>();
+
+        for (int y = 0; y < maxRow; y++)
+            for (int x = 0; x < maxCol; x++)
+                points[y][x] = new Point(x, y);
 
         Point start = null;
         col = 0;
@@ -279,7 +305,7 @@ public class Map {
         for (byte current : boardString.getBytes()) {
             switch(current) {
                 case '*':
-                    boxes.add(new Point(col, row));
+                    boxes.add(points[row][col]);
                 case '.':
                     matrix[row][col] = Square.GOAL;
                     break;
@@ -287,10 +313,18 @@ public class Map {
                     matrix[row][col] = Square.WALL;
                     break;
                 case '$':
-                    boxes.add(new Point(col, row));
+                    boxes.add(points[row][col]);
+                    matrix[row][col] = Square.NONE;
                     break;
                 case '@':
-                    start = new Point(col, row);
+                    start = points[row][col];
+                    break;
+                case ' ':
+                    /* check if we're inside the map. */
+                    if (col == 0 || row == 0 || matrix[row-1][col] == Square.INVALID)
+                        matrix[row][col] = Square.INVALID;
+                    else
+                        matrix[row][col] = Square.NONE;
                     break;
                 case '\n':
                     row++;
@@ -298,10 +332,14 @@ public class Map {
                     break;
             }
 
-            if (current != '\n') {
+            if (current != '\n')
                 col++;
-            }
         }
-        return new Map(start, matrix, boxes);
+
+        for (int y = 0; y < maxRow; y++)
+            for (int x = 0; x < maxCol; x++)
+                if (matrix[y][x] == Square.INVALID)
+                    matrix[y][x] = Square.WALL;
+        return new Map(start, matrix, boxes, points);
     }
 }

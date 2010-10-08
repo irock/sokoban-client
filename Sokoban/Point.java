@@ -8,12 +8,12 @@ public class Point implements Comparable<Point> {
     /**
      * The x-coordinate of this Point.
      */
-    int x;
+    final int x;
 
     /**
      * The y-coordinate of this Point.
      */
-    int y;
+    final int y;
 
     /**
      * Create a new Point.
@@ -32,8 +32,7 @@ public class Point implements Comparable<Point> {
      * @param p The point to copy.
      */
     public Point(Point p) {
-        this.x = p.x;
-        this.y = p.y;
+        this(p.x, p.y);
     }
 
     /**
@@ -48,38 +47,6 @@ public class Point implements Comparable<Point> {
         if (x != p.x)
             return x - p.x;
         return y - p.y;
-    }
-
-    /**
-     * Add the given deltas to this points coordinates.
-     *
-     * @param dx The delta in x-way.
-     * @param dy The delta in y-way.
-     */
-    public void translate(int dx, int dy) {
-        x += dx;
-        y += dy;
-    }
-
-    /**
-     * Set the x- and y-coordinate of the Point.
-     *
-     * @param x The new x-coordinate.
-     * @param y The new y-coordinate.
-     */
-    public void set(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    /**
-     * Copy the x- and y-coordinates of the given point.
-     *
-     * @param p The Point to copy.
-     */
-    public void set(Point p) {
-        this.x = p.x;
-        this.y = p.y;
     }
 
     @Override
