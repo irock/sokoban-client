@@ -41,16 +41,6 @@ public class State {
     private Point min;
 
     /**
-     * A unique number for this state.
-     */
-    private int id;
-
-    /**
-     * The number of states created in total.
-     */
-    private static int totalNum = 0;
-
-    /**
      * Used for remembering old result of getGoalDistance() since that method
      * is quite expensive.
      */
@@ -94,7 +84,6 @@ public class State {
         this.previous = previous;
         this.start = start;
         this.goalDistance = -1;
-        this.id = totalNum++;
 
         Arrays.sort(this.boxes);
     }
@@ -106,13 +95,6 @@ public class State {
             hash = hash ^ box.hashCode();
         hash = hash * 17;
         return hash + getMinPosition().hashCode();
-    }
-
-    /**
-     * @return the unique id of this state.
-     */
-    public int getId() {
-        return id;
     }
 
     /**

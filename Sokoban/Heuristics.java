@@ -11,33 +11,6 @@ import java.util.AbstractMap.SimpleEntry;
  */
 public class Heuristics {
     /**
-     * A heuristic forcing states to be processed after some time.
-     */
-    public static class MinId implements Comparator<State> {
-        /**
-         * The minimum distance between two states to compare them.
-         */
-        int range;
-
-        /**
-         * Create a new MinId heuristic.
-         *
-         * @param range The minimum difference in id of two states to compare
-         * them.
-         */
-        public MinId(int range) {
-            this.range = range;
-        }
-
-        public int compare(State a, State b) {
-            int tmp = a.getId() - b.getId();
-            if (Math.abs(tmp) < range)
-                return 0;
-            return tmp;
-        }
-    }
-
-    /**
      * A heuristic expanding the states with the most boxes in a goal first.
      */
     public static class MaxNumDone implements Comparator<State> {
