@@ -316,6 +316,8 @@ public class Map {
                     boxes.add(points[row][col]);
                     matrix[row][col] = Square.NONE;
                     break;
+                case '+':
+                    matrix[row][col] = Square.GOAL;
                 case '@':
                     start = points[row][col];
                     break;
@@ -340,6 +342,12 @@ public class Map {
             for (int x = 0; x < maxCol; x++)
                 if (matrix[y][x] == Square.INVALID)
                     matrix[y][x] = Square.WALL;
+
+        for (int x = 0; x < maxCol; x++)
+            matrix[0][x] = matrix[maxRow-1][x] = Square.WALL;
+        for (int y = 0; y < maxRow; y++)
+            matrix[y][0] = matrix[y][maxCol-1] = Square.WALL;
+
         return new Map(start, matrix, boxes, points);
     }
 }

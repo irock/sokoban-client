@@ -1,5 +1,7 @@
 package Sokoban;
 
+import java.io.*;
+
 /**
  * A container class for offline puzzles.
  */
@@ -338,5 +340,31 @@ public class Puzzle {
      */
     public static String getPuzzle(int number) {
         return puzzles[number];
+    }
+
+    public static String getPuzzleFromSamples(int number) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader("samples"));
+            String line;
+            StringBuffer mapString = new StringBuffer();
+            boolean inMap = false;
+
+            while ((line = reader.readLine()) != null) {
+                if (inMap) {
+                    if (line.length() == 0 || line.charAt(0) == ';')
+                        return mapString.toString();
+                    mapString.append(line);
+                    mapString.append('\n');
+                } else if (line.length() > 0 && line.charAt(0) == ';' &&
+                        Integer.parseInt(line.substring(2)) == number) {
+                    reader.readLine();
+                    inMap = true;
+                }
+            }
+
+            if (inMap)
+                return mapString.toString();
+        } catch (IOException e) { }
+        return "";
     }
 }

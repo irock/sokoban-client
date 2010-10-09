@@ -95,6 +95,13 @@ public class Solver {
         return endState;
     }
 
+    private void printInfo(int expanded, int inspected, int visited,
+            int filled, long start) {
+        System.out.printf("expanded: %6d, inspected: %6d, queue: %6d, " +
+                "filled: %2d, time: %2.2f s\r", expanded, inspected, visited,
+                filled, (float)(System.currentTimeMillis()-start)/1000);
+    }
+
     /**
      * Do a breadth first search for a solution.
      *
@@ -118,14 +125,10 @@ public class Solver {
             State curState = queue.poll();
 
             if (numExpanded == 1 || i == interval) {
-                long time = System.currentTimeMillis() - start;
-
                 if (printProgress)
-                    System.out.printf("expanded: %6d, queue: %6d, num " +
-                            "filled: %2d, time: %2.2f s\r", numExpanded,
-                            queue.size(), curState.getNumBoxesInGoal(),
-                            (float)time/1000);
-                if (time >= searchLimit)
+                    printInfo(numExpanded, numInspected, queue.size(),
+                            curState.getNumBoxesInGoal(), start);
+                if (System.currentTimeMillis()-start >= searchLimit)
                     break;
                 i = 0;
             }
@@ -139,8 +142,11 @@ public class Solver {
                 if (!visited.contains(nextState)) {
                     if (nextState.goalReached()) {
                         endState = nextState;
-                        if (printProgress)
+                        if (printProgress) {
+                            printInfo(numExpanded, numInspected, queue.size(),
+                                    endState.getNumBoxesInGoal(), start);
                             System.out.println();
+                        }
                         return numExpanded;
                     }
                     queue.add(nextState);
@@ -149,8 +155,11 @@ public class Solver {
             }
         }
 
-        if (printProgress)
+        if (printProgress) {
+            printInfo(numExpanded, numInspected, queue.size(),
+                    0, start);
             System.out.println();
+        }
         return numExpanded;
     }
 
@@ -199,7 +208,7 @@ public class Solver {
                 return;
             }
         } else
-            mapString = Puzzle.getPuzzle(puzzle);
+            mapString = Puzzle.getPuzzleFromSamples(puzzle);
 
         Solver solver = new Solver(mapString);
 
