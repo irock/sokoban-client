@@ -82,6 +82,13 @@ public class Solver {
     }
 
     /**
+     * @return the map to solve.
+     */
+    public Map getMap() {
+        return map;
+    }
+
+    /**
      * @return the start state of the map.
      */
     public State getStartState() {

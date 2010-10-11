@@ -44,7 +44,7 @@ public class State {
      * Used for remembering old result of getGoalDistance() since that method
      * is quite expensive.
      */
-    int goalDistance;
+    private int goalDistance;
 
     /**
      * Create a new State.
@@ -195,7 +195,8 @@ public class State {
                 if (reachable.contains(p)) {
                     p = map.getPoint(p.x + 2*d.dx, p.y + 2*d.dy);
                     if (!map.isWall(p) && !map.isForbidden(p) &&
-                            !hasBox(p) && !wouldLock(box, d))
+                            !hasBox(p) && !wouldLock(box, d) &&
+                            wouldBeConsistent(box, d))
                         moves.add(new SimpleEntry<Direction, Point>(d, box));
                 }
             }
@@ -641,5 +642,59 @@ public class State {
                 goalDist += (int)Math.pow(box.x - goalPoint.x, 2)
                           + (int)Math.pow(box.y - goalPoint.y, 2);
         return goalDist;
+    }
+
+    private boolean wouldBeConsistent(Point box, Direction direction) {
+        int index = 0;
+        for (int i = 0; i < boxes.length; i++)
+            if (boxes[i].equals(box))
+                index = i;
+
+        boxes[index] = map.getPoint(box.x + direction.dx, box.y + direction.dy);
+        boolean consistent = isConsistent();
+        boxes[index] = box;
+        return consistent;
+    }
+
+    /**
+     * A three level check of consistency. Checks that given any three boxes in
+     * the state, they can each be placed on a different goal.
+     *
+     * @return true iff the state is consistent.
+     */
+    private boolean isConsistent() {
+        for (int i = 0; i < boxes.length; i++) {
+            Point box1 = boxes[i];
+            Set<Point> r1 = map.getReachableGoals(box1);
+            if (r1.size() > 2)
+                continue;
+
+            for (int j = i+1; j < boxes.length; j++) {
+                Point box2 = boxes[j];
+                Set<Point> r2 = map.getReachableGoals(box2);
+                if (r2.size() > 2)
+                    continue;
+
+                for (int k = j+1; k < boxes.length; k++) {
+                    Point box3 = boxes[k];
+                    Set<Point> r3 = map.getReachableGoals(box3);
+                    if (r3.size() > 2)
+                        continue;
+
+                    boolean found = false;
+                    for (Point p1 : r1)
+                        for (Point p2 : r2)
+                            for (Point p3 : r3)
+                                if (!p1.equals(p2) && !p1.equals(p3) &&
+                                        !p2.equals(p3)) {
+                                    found = true;
+                                    break;
+                                }
+                    if (!found)
+                        return false;
+                }
+            }
+        }
+        return true;
     }
 }

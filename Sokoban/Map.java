@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * A representation of a map in the Sokoban game. The map is a puzzle and
@@ -13,12 +14,10 @@ import java.util.LinkedList;
 public class Map {
     /**
      * A representation of a square in the map. Each position on the map is a
-     * square and each square can be either a goal, a wall or neither. A
-     * forbidden square is a square that boxes shouldn't be moved to if they're
-     * not to be stuck.
+     * square and each square can be either a goal, a wall or neither.
      */
     private enum Square {
-        NONE, GOAL, WALL, FORBIDDEN, INVALID
+        NONE, GOAL, WALL, INVALID
     };
 
     /**
@@ -47,6 +46,11 @@ public class Map {
     private Point[][] points;
 
     /**
+     * A set of goals reachable in each point of the map.
+     */
+    private Set<Point>[][] goalsReachable;
+
+    /**
      * Create a new Map.
      *
      * @param start The start position of the player.
@@ -67,8 +71,7 @@ public class Map {
                 if (this.matrix[y][x] == Square.GOAL)
                     this.goals.add(points[y][x]);
 
-        for (Point p : findForbiddenSquares())
-            matrix[p.y][p.x] = Square.FORBIDDEN;
+        goalsReachable = findReachableGoals();
     }
 
     /**
@@ -177,7 +180,28 @@ public class Map {
      * @return true iff the given point is a forbidden square.
      */
     public boolean isForbidden(int x, int y) {
-        return matrix[y][x] == Square.FORBIDDEN;
+        return goalsReachable[y][x].size() == 0;
+    }
+
+    /**
+     * Getter for reachable goals.
+     *
+     * @param p The point in question.
+     * @return the reachable goals in the given position.
+     */
+    public Set<Point> getReachableGoals(Point p) {
+        return getReachableGoals(p.x, p.y);
+    }
+
+    /**
+     * Getter for reachable goals.
+     *
+     * @param x The x coordinate of the position.
+     * @param y The y coordinate of the position.
+     * @return the reachable goals in the given position.
+     */
+    public Set<Point> getReachableGoals(int x, int y) {
+        return goalsReachable[y][x];
     }
 
     /**
@@ -202,59 +226,71 @@ public class Map {
     }
 
     /**
-     * Searches for forbidden squares in the map. Forbidden squares are those
-     * that satisfy the following condition: If a box is placed in a forbidden
-     * square, the puzzle can't be solved.
+     * Finds the goals that are reachable in each point in the map. Forbidden
+     * states are those where the number of reachable goals is zero.
      *
-     * @return the set of forbidden squares found in the map.
+     * @return an array of sets where each set contains the goals that are
+     * reachable in the given position.
      */
-    private Set<Point> findForbiddenSquares() {
-        Set<Point> forbidden = new HashSet<Point>();
+    private Set<Point>[][] findReachableGoals() {
+        @SuppressWarnings("unchecked")
+        Set<Point>[][] goalSets = new Set[getNumRows()][getNumCols()];
+        Queue<Point> queue = new LinkedList<Point>();
+        Set<Point> visited = new HashSet<Point>();
 
-        for (int y = 1; y < getNumRows()-1; y++)
-            for (int x = 1; x < getNumCols()-1; x++) {
-                if (isWall(x, y) || forbidden.contains(getPoint(x, y)))
-                    continue;
+        for (int y = 0; y < getNumRows(); y++)
+            for (int x = 0; x < getNumCols(); x++) {
+                goalSets[y][x] = new HashSet<Point>();
+                visited.clear();
+                queue.add(getPoint(x, y));
+                visited.add(getPoint(x, y));
 
-                for (int i = 0; i < Direction.getArray().length/2; i++) {
-                    boolean trapped = true;
+                while (!queue.isEmpty()) {
+                    Point p = queue.poll();
+                    if (isGoal(p))
+                        goalSets[y][x].add(p);
 
-                    for (int j = i; j < Direction.getArray().length;
-                            j += Direction.getArray().length/2) {
-                        Direction forward = Direction.getArray()[j];
-
-                        Direction up = Direction.getArray()[(forward.ordinal() + 1) %
+                    for (Direction d : Direction.getArray()) {
+                        Direction opp = Direction.getArray()[(d.ordinal() + 2) %
                             Direction.getArray().length];
-                        Direction down = Direction.getArray()[(forward.ordinal() - 1 +
-                                Direction.getArray().length) %
-                            Direction.getArray().length];
+                        if (p.x + d.dx >= 0 && p.x + d.dx < getNumCols() &&
+                                p.y + d.dy >= 0 && p.y + d.dy < getNumRows() &&
+                                p.x + opp.dx >= 0 && p.x + opp.dx < getNumCols() &&
+                                p.y + opp.dy >= 0 && p.y + opp.dy < getNumRows()) {
+                            Point dst = getPoint(p.x + d.dx, p.y + d.dy);
 
-                        int xx = x;
-                        int yy = y;
-
-                        /* Check if it's have a corner. */
-                        if (isWall(xx + up.dx, yy + up.dy) &&
-                                isWall(xx + forward.dx, yy +
-                                    forward.dy) && !isGoal(x, y)) {
-                            trapped = true;
-                            break;
-                        }
-
-                        while (trapped && !isWall(xx, yy)) {
-                            if ((!isWall(xx + up.dx, yy + up.dy) &&
-                                        !isWall(xx + down.dx, yy +
-                                            down.dy)) || isGoal(xx, yy))
-                                trapped = false;
-
-                            xx += forward.dx;
-                            yy += forward.dy;
+                            if (!isWall(p.x + opp.dx, p.y + opp.dy) &&
+                                    !isWall(dst) && !visited.contains(dst)) {
+                                queue.add(dst);
+                                visited.add(dst);
+                            }
                         }
                     }
-                    if (trapped)
-                        forbidden.add(getPoint(x, y));
                 }
             }
-        return forbidden;
+
+        return goalSets;
+    }
+
+    @Override
+    public String toString() {
+        StringBuffer buffer = new StringBuffer(getNumRows()*getNumCols());
+
+        for (int y = 0; y < getNumRows(); y++) {
+            for (int x = 0; x < getNumCols(); x++) {
+                Point p = getPoint(x, y);
+                if (isWall(p))
+                    buffer.append('#');
+                else if (isGoal(p))
+                    buffer.append('.');
+                else if (isForbidden(p))
+                    buffer.append('x');
+                else
+                    buffer.append(' ');
+            }
+            buffer.append('\n');
+        }
+        return buffer.toString();
     }
 
     /**
