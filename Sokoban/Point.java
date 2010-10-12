@@ -61,4 +61,9 @@ public class Point implements Comparable<Point> {
     public int hashCode() {
         return (x << 16) + y;
     }
+
+    @Override
+    public String toString() {
+        return String.format("x: %d, y: %d", x, y);
+    }
 }

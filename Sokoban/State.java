@@ -223,6 +223,17 @@ public class State {
         return false;
     }
 
+    /**
+     * Checks if the given position contains a box in this state.
+     *
+     * @param x The x-coordinate of the point to examine.
+     * @param y The y-coordinate of the point to examine.
+     * @return true iff there is a box on the given Point.
+     */
+    public boolean hasBox(int x, int y) {
+        return hasBox(map.getPoint(x, y));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof State))
@@ -257,13 +268,54 @@ public class State {
         boxes[index] = box;
         boolean locked = false;
 
-        for (Point neighbor : boxes)
-            if (Math.abs(box.x - neighbor.x) <= 1 &&
-                    Math.abs(box.y - neighbor.y) <= 1 &&
-                    !map.isGoal(neighbor) && boxIsLocked(neighbor)) {
-                locked = true;
-                break;
+        for (int dx = -1; !locked && dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++) {
+                Point p = map.getPoint(box.x + dx, box.y + dy);
+                if ((dx == 0 && dy == 0) || start.equals(p) || map.isWall(p) ||
+                        map.isGoal(p))
+                    continue;
+
+                /* safe to assume that p is not a map edge. */
+                Point up = map.getPoint(p.x, p.y-1);
+                Point down = map.getPoint(p.x, p.y+1);
+                Point left = map.getPoint(p.x-1, p.y);
+                Point right = map.getPoint(p.x+1, p.y);
+
+                if ((!map.isWall(up) && !hasBox(up)) ||
+                        (!map.isWall(down) && !hasBox(down)) ||
+                        (!map.isWall(left) && !hasBox(left)) ||
+                        (!map.isWall(right) && !hasBox(right)))
+                    continue;
+
+                /* up, down, left, right is blocked. */
+                int notInGoal = 0;
+                for (int ddx = -1; notInGoal == 0 && ddx <= 1; ddx++)
+                    for (int ddy = -1; ddy <= 1; ddy++) {
+                        Point pp = map.getPoint(p.x + ddx, p.y + ddy);
+                        if (!map.isGoal(pp) && hasBox(pp)) {
+                            notInGoal++;
+                            break;
+                        }
+                    }
+
+                if (notInGoal > 0 &&
+                        (((map.isWall(p.x-1, p.y-1) || hasBox(p.x-1, p.y-1)) &&
+                          (map.isWall(p.x+1, p.y+1) || hasBox(p.x+1, p.y+1))) ||
+                         ((map.isWall(p.x-1, p.y+1) || hasBox(p.x-1, p.y+1)) &&
+                          (map.isWall(p.x+1, p.y-1) || hasBox(p.x+1, p.y-1))))) {
+                    locked = true;
+                    break;
+                }
             }
+
+        if (!locked)
+            for (Point neighbor : boxes)
+                if (Math.abs(box.x - neighbor.x) <= 1 &&
+                        Math.abs(box.y - neighbor.y) <= 1 &&
+                        !map.isGoal(neighbor) && boxIsLocked(neighbor)) {
+                    locked = true;
+                    break;
+                }
 
         boxes[index] = backup;
         return locked;
