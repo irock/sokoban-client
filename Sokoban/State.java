@@ -249,6 +249,62 @@ public class State {
     }
 
     /**
+     *  If we put a box at given point, this method will tell us if that would
+     *  generate a blocking cycle.
+     */
+    private boolean wouldCreateBlockingCycle(Point p) {
+        for (Direction d : Direction.getArray()) {
+            if (wouldCreateBlockingCycle(p,d)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean wouldCreateBlockingCycle(Point p, Direction d) {
+        Point currentPoint = p;
+        Direction currentDirection = d;
+        while (true) {
+
+            if (currentPoint.x < 2 || currentPoint.y < 2 || currentPoint.x >= map.getNumCols()-2 || currentPoint.y >= map.getNumRows()-2)
+                break;
+
+            Direction currentRight = Direction.getArray()[(d.ordinal()+1)%Direction.getArray().length];
+            // Four interesting points:
+            // 123 
+            // @ 4
+            // pattern one: 124
+            // pattern two: 234
+            Point p1 = map.getPoint(currentPoint.x + currentDirection.dx, currentPoint.y + currentDirection.dy);
+            Point p2 = map.getPoint(currentPoint.x + currentDirection.dx + currentRight.dx, currentPoint.y + currentDirection.dy+currentRight.dy);
+            Point p3 = map.getPoint(currentPoint.x + currentDirection.dx + 2*currentRight.dx, currentPoint.y + currentDirection.dy + 2*currentRight.dy);
+            Point p4 = map.getPoint(currentPoint.x + 2*currentRight.dx, currentPoint.y + 2*currentRight.dy);
+
+            if (p1 == p)
+                return true;
+
+            // pattern 1 match
+            if (((map.isWall(p1) || hasBox(p1)) &&
+                    (map.isWall(p2) || hasBox(p2)) &&
+                    (map.isWall(p4) || hasBox(p4))) 
+                    ||
+                    ((map.isWall(p2) || hasBox(p2)) &&
+                    (map.isWall(p3) || hasBox(p3)) &&
+                    (map.isWall(p4) || hasBox(p4))) 
+                ) {
+                    currentPoint = map.getPoint(currentPoint.x + 2*currentRight.dx,currentPoint.y + 2*currentRight.dy);
+                    currentDirection = Direction.getArray()[(d.ordinal()+2)%Direction.getArray().length];
+                } else if (map.isWall(p1) || hasBox (p1)) {
+                    currentPoint = p1;
+                } else {
+                    break;
+                }
+        }
+        return false;
+    }
+
+
+    /**
      * Check if the movement of the given box in the given direction results in
      * a lock, i.e.\ unsoluble game.
      *
@@ -267,6 +323,14 @@ public class State {
         box = map.getPoint(box.x + direction.dx, box.y + direction.dy);
         boxes[index] = box;
         boolean locked = false;
+
+        /*
+        if (wouldCreateBlockingCycle(box)) {
+            System.out.println("Match for: " + "("+box.x+","+box.y+")");
+            System.out.println(this);
+            System.exit(1);
+        }
+        */
 
         for (int dx = -1; !locked && dx <= 1; dx++)
             for (int dy = -1; dy <= 1; dy++) {
