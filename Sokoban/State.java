@@ -298,17 +298,17 @@ public class State {
             Point p3 = map.getPoint(currentPoint.x + currentDirection.dx + 2*currentRight.dx, currentPoint.y + currentDirection.dy + 2*currentRight.dy);
             Point p4 = map.getPoint(currentPoint.x + 2*currentRight.dx, currentPoint.y + 2*currentRight.dy);
 
-            if (p1 == p)
+            if (currentPoint == p)
                 return true;
 
             // pattern 1 match
             if (((map.isWall(p1) || hasBox(p1)) &&
                     (map.isWall(p2) || hasBox(p2)) &&
-                    (map.isWall(p4) || hasBox(p4))) 
+                    (map.isWall(p4) || hasBox(p4)) && !map.isGoal(p1) && !map.isGoal(p2) && !map.isGoal(p4)) 
                     ||
                     ((map.isWall(p2) || hasBox(p2)) &&
                     (map.isWall(p3) || hasBox(p3)) &&
-                    (map.isWall(p4) || hasBox(p4))) 
+                    (map.isWall(p4) || hasBox(p4)) && !map.isGoal(p2) && !map.isGoal(p3) && !map.isGoal(p4)) 
                 ) {
                     currentPoint = map.getPoint(currentPoint.x + 2*currentRight.dx,currentPoint.y + 2*currentRight.dy);
                     currentDirection = Direction.getArray()[(d.ordinal()+2)%Direction.getArray().length];
@@ -342,13 +342,9 @@ public class State {
         boxes[index] = box;
         boolean locked = false;
 
-        /*
-        if (wouldCreateBlockingCycle(box)) {
-            System.out.println("Match for: " + "("+box.x+","+box.y+")");
-            System.out.println(this);
-            System.exit(1);
-        }
-        */
+        
+
+        
 
         for (int dx = -1; !locked && dx <= 1; dx++)
             for (int dy = -1; dy <= 1; dy++) {
@@ -400,6 +396,12 @@ public class State {
                 }
 
         boxes[index] = backup;
+
+        if (wouldCreateBlockingCycle(box)) {
+            System.out.println("Match for: " + "("+box.y+","+box.x+")");
+            System.out.println(this);
+            return true;
+        }
         return locked;
     }
 
