@@ -51,6 +51,11 @@ public class Map {
     private Set<Point>[][] goalsReachable;
 
     /**
+     * A calculated score for each point in the map.
+     */
+    private float[][] scores;
+
+    /**
      * Create a new Map.
      *
      * @param start The start position of the player.
@@ -72,6 +77,7 @@ public class Map {
                     this.goals.add(points[y][x]);
 
         goalsReachable = findReachableGoals();
+        scores = findScores();
     }
 
     /**
@@ -83,6 +89,27 @@ public class Map {
      */
     public Point getPoint(int x, int y) {
         return points[y][x];
+    }
+
+    /**
+     * Getter for scores.
+     *
+     * @param x The x-coordinate of the point to return.
+     * @param y The y-coordinate of the point to return.
+     * @return the score of point represented by the given x and y coordinates.
+     */
+    public float getScore(int x, int y) {
+        return scores[y][x];
+    }
+
+    /**
+     * Getter for scores.
+     *
+     * @param p The point in question.
+     * @return the score of the given point.
+     */
+    public float getScore(Point p) {
+        return getScore(p.x, p.y);
     }
 
     /**
@@ -270,6 +297,34 @@ public class Map {
             }
 
         return goalSets;
+    }
+
+    /**
+     * Calculate the score of each point in the map. The score is 0 if the
+     * point is not a goal. Otherwise, it's a function of how easy it is to
+     * push a box into the position. A goal square with walls along each side
+     * gives the highest score.
+     *
+     * @return a two-dimensional array where the indexes are the x and y
+     * coordinate of the points and its value is the calculated score.
+     */
+    private float[][] findScores() {
+        float[][] scores = new float[getNumRows()][getNumCols()];
+
+        for (int y = 1; y < getNumRows()-1; y++)
+            for (int x = 1; x < getNumCols()-1; x++) {
+                if (isGoal(x, y)) {
+                    scores[y][x] = 1;
+                    for (Direction d : Direction.getArray()) {
+                        if (isWall(x + d.dx, y + d.dy))
+                            scores[y][x] += 2;
+                        else if (isWall(x + 2*d.dx, y + 2*d.dy))
+                            scores[y][x] += 1;
+                    }
+                }
+            }
+
+        return scores;
     }
 
     @Override

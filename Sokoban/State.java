@@ -47,6 +47,11 @@ public class State {
     private int goalDistance;
 
     /**
+     * For holding the result of getTotalScore().
+     */
+    private float score;
+
+    /**
      * Create a new State.
      *
      * @param start The start position in this state.
@@ -84,6 +89,7 @@ public class State {
         this.previous = previous;
         this.start = start;
         this.goalDistance = -1;
+        this.score = 1000;
 
         Arrays.sort(this.boxes);
     }
@@ -232,6 +238,18 @@ public class State {
      */
     public boolean hasBox(int x, int y) {
         return hasBox(map.getPoint(x, y));
+    }
+
+    /**
+     * @return the total score for this state.
+     */
+    public float getTotalScore() {
+        if (score == 1000) {
+            score = 0;
+            for (Point box : boxes)
+                score += map.getScore(box);
+        }
+        return score;
     }
 
     @Override

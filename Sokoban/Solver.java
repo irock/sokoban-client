@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.PriorityQueue;
@@ -132,9 +133,14 @@ public class Solver {
             State curState = queue.poll();
 
             if (numExpanded == 1 || i == interval) {
-                if (printProgress)
+                if (printProgress) {
                     printInfo(numExpanded, numInspected, queue.size(),
                             curState.getNumBoxesInGoal(), start);
+
+                    if (System.currentTimeMillis()-start+1000 >= searchLimit)
+                        System.out.println(curState);
+                }
+
                 if (System.currentTimeMillis()-start >= searchLimit)
                     break;
                 i = 0;
@@ -163,8 +169,7 @@ public class Solver {
         }
 
         if (printProgress) {
-            printInfo(numExpanded, numInspected, queue.size(),
-                    0, start);
+            printInfo(numExpanded, numInspected, queue.size(), 0, start);
             System.out.println();
         }
         return numExpanded;
@@ -174,19 +179,31 @@ public class Solver {
      * Run the solver on the puzzle given in args[0].
      */
     public static void main(String[] args) {
-        int puzzle;
-        String mapString;
+        int puzzle = 0;
+        String mapString = null;
 
-        if (args.length != 1) {
-            System.out.println("No puzzle number specified.");
-            return;
+        if (args.length == 0) {
+            System.err.println("No puzzle number specified.");
+            System.exit(1);
         }
 
         try {
             puzzle = Integer.parseInt(args[0]);
         } catch (NumberFormatException e) {
-            System.out.println("Invalid puzzle number specified.");
-            return;
+            System.err.println("Invalid puzzle number specified.");
+            System.exit(1);
+        }
+
+        if (args.length > 1) {
+            if (args[1].equals("-q")) {
+                printProgress = false;
+                printDirectionPath = false;
+                printStatePath = false;
+                printPuzzle = false;
+            } else {
+                System.err.println("Invalid option specified.");
+                System.exit(1);
+            }
         }
 
         Socket socket = null;
@@ -205,17 +222,21 @@ public class Solver {
                 in.read(buffer, 0, buffer.length);
                 mapString = new String(buffer);
 
-                if (mapString.substring(0, "Wrong ID".length()).equals("Wrong ID")) {
-                    System.out.println("Invalid puzzle number specified!");
+                String wrong = "Wrong ID";
+                if (mapString.substring(0, wrong.length()).equals(wrong)) {
+                    mapString = null;
                     socket.close();
-                    return;
                 }
             } catch (IOException e) {
                 System.err.println(e.getMessage());
-                return;
             }
         } else
             mapString = Puzzle.getPuzzleFromSamples(puzzle);
+
+        if (mapString == null) {
+            System.err.println("No puzzle with the supplied number found.");
+            System.exit(1);
+        }
 
         Solver solver = new Solver(mapString);
 
@@ -225,7 +246,7 @@ public class Solver {
         Heuristics.MultipleHeuristic heuristic =
             new Heuristics.MultipleHeuristic();
 
-        heuristic.add(new Heuristics.MinGoalDistance(), 3);
+        heuristic.add(new Heuristics.MaxScore(), 5);
 
         long time = System.currentTimeMillis();
         long num = solver.breadthFirstSearch(heuristic);
@@ -236,7 +257,9 @@ public class Solver {
                 System.out.println(solver.getEndState().statePath());
 
             if (printDirectionPath) {
-                for (Direction d : solver.getEndState().directionPath())
+                List<Direction> path = solver.getEndState().directionPath();
+                System.out.println("path length: " + path.size());
+                for (Direction d : path)
                     System.out.print(d);
                 System.out.println();
             }
@@ -262,7 +285,7 @@ public class Solver {
 
         if (printPuzzle) {
             if (solver.getEndState() != null)
-                System.out.printf("path length: %d\n",
+                System.out.printf("numb states: %d\n",
                         solver.getEndState().getNumMoves());
             System.out.printf("num expanded: %d\n", num);
             System.out.printf("time: %d\n", time);

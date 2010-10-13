@@ -20,6 +20,20 @@ public class Heuristics {
     }
 
     /**
+     * A heuristic for comparing state scores.
+     */
+    public static class MaxScore implements Comparator<State> {
+        public int compare(State a, State b) {
+            float cmp = b.getTotalScore() - a.getTotalScore();
+            if (cmp < 0)
+                return -1;
+            else if (cmp > 0)
+                return 1;
+            return 0;
+        }
+    }
+
+    /**
      * A heuristic expanding the states with the least sum of squared distances
      * to the goal squares.
      */
@@ -165,4 +179,42 @@ public class Heuristics {
         }
     }
 
+    /**
+     * The class can combine several heuristics, and prioritize them in
+     * different orders.
+     */
+    public class WeightedHeuristic implements Comparator<State> {
+        List<Entry<Comparator<State>, Float>> heuristics;
+
+        /**
+         * Default constructor.
+         */
+        public WeightedHeuristic() {
+            heuristics = new LinkedList<Entry<Comparator<State>, Float>>();
+        }
+
+        /**
+         * Heuristics are added with the most important one being first.
+         **/
+        public void add(Comparator<State> heuristic, float weight) {
+            heuristics.add(new SimpleEntry<Comparator<State>, Float>(
+                        heuristic, weight));
+        }
+
+        /**
+         * The WeightedHeuristic is interpreted as any normal heuristic,
+         * by the rest of the program.
+         */
+        public int compare(State a, State b) {
+            float total = 0;
+            for (Entry<Comparator<State>, Float> entry : heuristics)
+                total += entry.getValue() * entry.getKey().compare(a, b);
+
+            if (total < 0)
+                return -1;
+            else if (total > 0)
+                return 1;
+            return 0;
+        }
+    }
 }
