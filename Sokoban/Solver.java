@@ -285,7 +285,7 @@ public class Solver {
 
         if (printPuzzle) {
             if (solver.getEndState() != null)
-                System.out.printf("numb states: %d\n",
+                System.out.printf("num states: %d\n",
                         solver.getEndState().getNumMoves());
             System.out.printf("num expanded: %d\n", num);
             System.out.printf("time: %d\n", time);
