@@ -287,7 +287,7 @@ public class State {
             if (currentPoint.x < 2 || currentPoint.y < 2 || currentPoint.x >= map.getNumCols()-2 || currentPoint.y >= map.getNumRows()-2)
                 break;
 
-            Direction currentRight = Direction.getArray()[(d.ordinal()+1)%Direction.getArray().length];
+            Direction currentRight = d.getRelative(1);
             // Four interesting points:
             // 123 
             // @ 4
@@ -311,7 +311,7 @@ public class State {
                     (map.isWall(p4) || hasBox(p4)) && !map.isGoal(p2) && !map.isGoal(p3) && !map.isGoal(p4)) 
                 ) {
                     currentPoint = map.getPoint(currentPoint.x + 2*currentRight.dx,currentPoint.y + 2*currentRight.dy);
-                    currentDirection = Direction.getArray()[(d.ordinal()+2)%Direction.getArray().length];
+                    currentDirection = d.getRelative(2);
                 } else if (map.isWall(p1) || hasBox (p1)) {
                     currentPoint = p1;
                 } else {
@@ -708,8 +708,8 @@ public class State {
      */
     public Point getTunnelEndPoint(Point start, Direction direction) {
         int numDirections = Direction.getArray().length;
-        Direction left = Direction.getArray()[(direction.ordinal()-1)%numDirections];
-        Direction right = Direction.getArray()[(direction.ordinal()+1)%numDirections];
+        Direction left = direction.getRelative(-1);
+        Direction right = direction.getRelative(1);
         Point last = start;
         Point current = new Point(start);
         Point goal = null;

@@ -74,4 +74,16 @@ public enum Direction {
             dirs = values();
         return dirs;
     }
+
+    /**
+     * Calculate the relative direction.
+     *
+     * @param turns The number of turns in clockwise rotation.
+     * @return the relative direction.
+     */
+    public Direction getRelative(int turn) {
+        if (turn < 0)
+            turn = (turn % getArray().length) + getArray().length;
+        return getArray()[(ordinal() + turn) % getArray().length];
+    }
 }

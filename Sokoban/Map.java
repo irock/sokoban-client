@@ -278,8 +278,7 @@ public class Map {
                         goalSets[y][x].add(p);
 
                     for (Direction d : Direction.getArray()) {
-                        Direction opp = Direction.getArray()[(d.ordinal() + 2) %
-                            Direction.getArray().length];
+                        Direction opp = d.getRelative(2);
                         if (p.x + d.dx >= 0 && p.x + d.dx < getNumCols() &&
                                 p.y + d.dy >= 0 && p.y + d.dy < getNumRows() &&
                                 p.x + opp.dx >= 0 && p.x + opp.dx < getNumCols() &&
