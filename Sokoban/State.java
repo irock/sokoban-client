@@ -268,36 +268,53 @@ public class State {
 
     /**
      *  If we put a box at given point, this method will tell us if that would
-     *  generate a blocking cycle.
+     *  generate a blocking cycle. This method don't have to check all possible
+     *  positions around the box for cycles, but the brute force method is much
+     *  easier to understand and not very expensive.
      */
     private boolean wouldCreateBlockingCycle(Point p) {
-        for (Direction d : Direction.getArray()) {
-            if (wouldCreateBlockingCycle(p,d)) {
-                return true;
-            }
-        }
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+                for (Direction d : Direction.getArray())
+                    if (wouldCreateBlockingCycle(map.getPoint(p.x+dx, p.y+dy), d))
+                        return true;
         return false;
     }
 
     /**
-     * Check if theres a cycle starting in the given point directed in the
-     * given direction.
+     * Check if theres a blocking, clockwise cycle starting in the given point
+     * directed in the given direction. A blocking cycle is a cycle in which
+     * the surrounding "walls" contains at least one box that cannot be moved
+     * to a goal square.
      *
-     * Four interesting points:
+     * There are all in all four interesting points:
+     *
      * 123 
-     * @ 4
-     * pattern one: 124
-     * pattern two: 234
+     * ↑ 4
+     *
+     * The arrow indicates the current position and direction. Either the cycle
+     * continues straight ahead, or it turns right (and right again). A turn is
+     * indicated by one of the following patterns:
+     *
+     * Pattern 1: 124
+     * Pattern 2: 234
+     *
+     * @param pos The position from where to start looking for a cycle.
+     * @param forward The direction in which to look for a cycle.
+     * @return true iff there is a blocking cycle starting in the given
+     * position, heading in the given direction.
      */
     private boolean wouldCreateBlockingCycle(Point pos, Direction forward) {
         if (!(map.isWall(pos) || hasBox(pos)))
             return false;
 
-        Point start = pos;
+        Point source = pos;
         boolean turned = false;
+        int turns = 0;
         int notInGoal = 0;
+        int goalsFound = 0;
 
-        while (true) {
+        while (turns < 3) {
             Direction right = forward.getRelative(1);
 
             /* check so that we haven't reached the end of the map. */
@@ -315,11 +332,11 @@ public class State {
             Point p4 = map.getPoint(pos.x + 2*right.dx, pos.y + 2*right.dy);
             Point p5 = map.getPoint(pos.x + right.dx, pos.y + right.dy);
 
-            if (!(map.isWall(p4) || hasBox(p4)))
+            if (start.equals(p5) || !(map.isWall(p4) || hasBox(p4)))
                 return false;
 
             if (!hasBox(p5) && map.isGoal(p5))
-                notInGoal -= 1;
+                ++goalsFound;
 
             if (!turned &&
                     ((map.isWall(p1) || hasBox(p1)) ||
@@ -332,15 +349,16 @@ public class State {
                               (hasBox(p3) && !map.isGoal(p3) ? 1 : 0) +
                               (hasBox(p4) && !map.isGoal(p4) ? 1 : 0);
 
-                if (p1.equals(start) || p2.equals(start) || p3.equals(start) ||
-                        p4.equals(start))
+                if (p1.equals(source) || p2.equals(source) ||
+                        p3.equals(source) || p4.equals(source))
                     break;
 
                 pos = p4;
                 forward = forward.getRelative(2);
                 turned = true;
+                ++turns;
             } else if (map.isWall(p1) || hasBox(p1)) {
-                if (p1.equals(start))
+                if (p1.equals(source))
                     break;
                 pos = p1;
                 turned = false;
@@ -350,7 +368,7 @@ public class State {
             }
         }
 
-        return notInGoal > 0;
+        return (notInGoal - goalsFound/2) > 0;
     }
 
 
