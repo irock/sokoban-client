@@ -114,9 +114,10 @@ public class Solver {
      * Do a breadth first search for a solution.
      *
      * @param heuristic The heuristic to use.
+     * @param limit The time limit.
      * @return the number of expanded nodes.
      */
-    public int breadthFirstSearch(Comparator<State> heuristic) {
+    public int breadthFirstSearch(Comparator<State> heuristic, int limit) {
         int numExpanded = 0;
         int numInspected = 0;
 
@@ -136,12 +137,9 @@ public class Solver {
                 if (printProgress) {
                     printInfo(numExpanded, numInspected, queue.size(),
                             curState.getNumBoxesInGoal(), start);
-
-                    if (System.currentTimeMillis()-start+1000 >= searchLimit)
-                        System.out.println(curState);
                 }
 
-                if (System.currentTimeMillis()-start >= searchLimit)
+                if (System.currentTimeMillis()-start >= limit)
                     break;
                 i = 0;
             }
@@ -246,11 +244,19 @@ public class Solver {
         Heuristics.MultipleHeuristic heuristic =
             new Heuristics.MultipleHeuristic();
 
-        heuristic.add(new Heuristics.MaxScore(), 5);
+        heuristic.add(new Heuristics.MinGoalDistance(), 3);
 
         long time = System.currentTimeMillis();
-        long num = solver.breadthFirstSearch(heuristic);
+        long num = solver.breadthFirstSearch(heuristic, (int)(3.0/4 * searchLimit));
         time = System.currentTimeMillis() - time;
+
+        if (solver.getEndState() == null) {
+            heuristic = new Heuristics.MultipleHeuristic();
+            heuristic.add(new Heuristics.MaxScore(), 3);
+            time = System.currentTimeMillis();
+            num += solver.breadthFirstSearch(heuristic, (int)(1.0/4 * searchLimit));
+            time = System.currentTimeMillis() - time;
+        }
 
         if (solver.getEndState() != null) {
             if (printStatePath)
