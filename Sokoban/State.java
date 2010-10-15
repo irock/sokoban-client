@@ -47,7 +47,7 @@ public class State {
     private int goalDistance;
 
     /**
-     * For holding the result of getTotalScore().
+     * For holding the result of getScore().
      */
     private float score;
 
@@ -82,7 +82,8 @@ public class State {
      * @param previous The state this state is derived from.
      * @param isSorted true iff the array of boxes already is sorted.
      */
-    public State(Point start, Point[] boxes, Map map, State previous, boolean isSorted) {
+    public State(Point start, Point[] boxes, Map map, State previous,
+            boolean isSorted) {
         this.map = map;
         this.min = null;
         this.boxes = boxes;
@@ -91,7 +92,8 @@ public class State {
         this.goalDistance = -1;
         this.score = 1000;
 
-        Arrays.sort(this.boxes);
+        if (!isSorted)
+            Arrays.sort(this.boxes);
     }
 
     @Override
@@ -139,7 +141,7 @@ public class State {
      *
      * @return the minimum position reachable by the player in this state.
      */
-    public Point getMinPosition() {
+    private Point getMinPosition() {
         if (min == null)
             min = getMinPosition(getReachablePositions());
         return min;
@@ -175,13 +177,6 @@ public class State {
      */
     public int getNumMoves() {
         return previous == null ? 0 : previous.getNumMoves() + 1;
-    }
-
-    /**
-     * @return the map this state is derived from.
-     */
-    public Map getMap() {
-        return map;
     }
 
     /**
@@ -241,9 +236,12 @@ public class State {
     }
 
     /**
-     * @return the total score for this state.
+     * Calculate the score for this state. The score of a state is the sum of
+     * the scores of all boxes.
+     *
+     * @return the score for this state.
      */
-    public float getTotalScore() {
+    public float getScore() {
         if (score == 1000) {
             score = 0;
             for (Point box : boxes)
@@ -289,7 +287,7 @@ public class State {
      *
      * There are all in all four interesting points:
      *
-     * 123 
+     * 123
      * ↑ 4
      *
      * The arrow indicates the current position and direction. Either the cycle
@@ -455,7 +453,7 @@ public class State {
      * @param box The box to check.
      * @return true iff the given box is locked.
      */
-    public boolean boxIsLocked(Point box) {
+    private boolean boxIsLocked(Point box) {
         return boxIsLocked(box, new HashSet<Point>());
     }
 
@@ -468,13 +466,11 @@ public class State {
      * @return true iff the box is locked.
      */
     private boolean boxIsLocked(Point box, Set<Point> checkedBoxes) {
-        int numDirections = Direction.getArray().length;
         checkedBoxes.add(box);
 
-        for (int i = 0; i < numDirections; i++) {
+        for (Direction d1 : Direction.getArray()) {
             Set<Point> children = new HashSet<Point>(checkedBoxes);
-            Direction d1 = Direction.getArray()[i];
-            Direction d2 = Direction.getArray()[(i+1)%numDirections];
+            Direction d2 = d1.getRelative(1);
 
             Point p1 = map.getPoint(box.x + d1.dx, box.y + d1.dy);
             Point p2 = map.getPoint(box.x + d2.dx, box.y + d2.dy);
@@ -554,7 +550,7 @@ public class State {
                 int x = current.x + d.dx;
                 int y = current.y + d.dy;
                 if (visited[y][x] == 0 && !map.isWall(x, y) && !map.isForbidden(x, y)) {
-                    Point to = new Point(x, y);
+                    Point to = map.getPoint(x, y);
                     if (dst.contains(to))
                         return new SimpleEntry<Point, Integer>(
                                 to, visited[current.y][current.x] + 1);
@@ -591,7 +587,7 @@ public class State {
                 int x = current.x + d.dx;
                 int y = current.y + d.dy;
                 if (visited[y][x] == 0 && !map.isWall(x, y)) {
-                    queue.add(new Point(x, y));
+                    queue.add(map.getPoint(x, y));
                     visited[y][x] = visited[current.y][current.x] + 1;
                 }
             }
@@ -602,11 +598,8 @@ public class State {
     /**
      * Goal test. Check if all the boxes are on goal squares.
      */
-    public boolean goalReached() {
-        for (Point box : boxes)
-            if (!map.isGoal(box))
-                return false;
-        return true;
+    public boolean isGoalReached() {
+        return getNumBoxesInGoal() == boxes.length;
     }
 
     @Override
@@ -685,7 +678,7 @@ public class State {
 
         int dx = to.x - from.x;
         int dy = to.y - from.y;
-        directions.addAll(pathSearch(start, new Point(from.x - dx, from.y - dy)));
+        directions.addAll(pathSearch(start, map.getPoint(from.x - dx, from.y - dy)));
 
         for (Direction d : Direction.getArray())
             if (d.dx == dx && d.dy == dy) {
@@ -739,42 +732,6 @@ public class State {
     }
 
     /**
-     * Given a point, determine if the point is in a tunnel. If so, move it as
-     * far into the tunnel as possible - or to the goal square that is farest
-     * into the tunnel. Boxes are treated as obstacles.
-     *
-     * NOT FINISHED YET.
-     *
-     * @param start The start point of the check
-     * @param direction The direction where the tunnel might be.
-     * @return the position that is farest into the tunnel given the above
-     * definition.
-     */
-    public Point getTunnelEndPoint(Point start, Direction direction) {
-        int numDirections = Direction.getArray().length;
-        Direction left = direction.getRelative(-1);
-        Direction right = direction.getRelative(1);
-        Point last = start;
-        Point current = new Point(start);
-        Point goal = null;
-
-        while (!map.isWall(current)) {
-            Point leftSide = new Point(current.x+left.dx, current.y+left.dy);
-            Point rightSide = new Point(current.x+right.dx, current.y+right.dy);
-
-            if (map.isGoal(current))
-                goal = current;
-
-            if (!map.isWall(leftSide) || !map.isWall(rightSide))
-                return null;
-
-            last = current;
-            current = new Point(current.x+direction.dx, current.y+direction.dy);
-        }
-        return goal != null ? goal : last;
-    }
-
-    /**
      * Create a new state from the given state and the movement described.
      *
      * @param from The source state.
@@ -782,13 +739,15 @@ public class State {
      * state.
      * @return the new state resulting from applying move on from.
      */
-    public static State getStateAfterMove(State from, Entry<Direction, Point> move) {
+    public static State getStateAfterMove(State from,
+            Entry<Direction, Point> move) {
         Direction direction = move.getKey();
         Point moveBox = move.getValue();
         Point[] boxes = new Point[from.boxes.length];
 
         int index = 0;
-        Point newBox = new Point(moveBox.x+direction.dx, moveBox.y+direction.dy);
+        Point newBox = from.map.getPoint(moveBox.x+direction.dx,
+                moveBox.y+direction.dy);
 
         /* Insert boxes in sorted order. */
         for (int i = 0; i < boxes.length; i++) {
@@ -807,21 +766,7 @@ public class State {
 
         if (newBox != null)
             boxes[index] = newBox;
-        return new State(moveBox, boxes, from.getMap(), from, true);
-    }
-
-    /**
-     * Calculate the sum of squared distances of each box to each goal point.
-     *
-     * @return the sum of squared distances as described above.
-     */
-    public int getSumOfSquaredDistances() {
-        int goalDist = 0;
-        for (Point box : boxes)
-            for (Point goalPoint : map.getGoals())
-                goalDist += (int)Math.pow(box.x - goalPoint.x, 2)
-                          + (int)Math.pow(box.y - goalPoint.y, 2);
-        return goalDist;
+        return new State(moveBox, boxes, from.map, from, true);
     }
 
     private boolean wouldBeConsistent(Point box, Direction direction) {

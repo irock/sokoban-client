@@ -24,22 +24,12 @@ public class Heuristics {
      */
     public static class MaxScore implements Comparator<State> {
         public int compare(State a, State b) {
-            float cmp = b.getTotalScore() - a.getTotalScore();
+            float cmp = b.getScore() - a.getScore();
             if (cmp < 0)
                 return -1;
             else if (cmp > 0)
                 return 1;
             return 0;
-        }
-    }
-
-    /**
-     * A heuristic expanding the states with the least sum of squared distances
-     * to the goal squares.
-     */
-    public static class MinSumOfSquaredDistances implements Comparator<State> {
-        public int compare(State a, State b) {
-            return a.getSumOfSquaredDistances() - b.getSumOfSquaredDistances();
         }
     }
 
@@ -54,11 +44,12 @@ public class Heuristics {
     }
 
     /**
-     * A heuristic comparing the number box moves so far in each state.
+     * A heuristic comparing the number of steps from the goal the player is in
+     * each state.
      */
-    public static class MinNumMoves implements Comparator<State> {
+    public static class MinStepsFromGoal implements Comparator<State> {
         public int compare(State a, State b) {
-            return a.getNumMoves() - b.getNumMoves();
+            return a.getStepsFromGoal() - b.getStepsFromGoal();
         }
     }
 
@@ -145,76 +136,6 @@ public class Heuristics {
                     return tmp;
             }
             return a.getNumMoves() - b.getNumMoves();
-        }
-    }
-
-    /**
-     * A heuristic comparing the number of steps from the goal the player is in
-     * each state.
-     */
-    public static class MinStepsFromGoal implements Comparator<State> {
-        public int compare(State a, State b) {
-            return a.getStepsFromGoal() - b.getStepsFromGoal();
-        }
-    }
-
-    /**
-     * A totally random heuristic.
-     */
-    public static class Random implements Comparator<State> {
-        /**
-         * The random number generator.
-         */
-        java.util.Random random;
-
-        /**
-         * Create a new Random heuristic.
-         */
-        public Random() {
-            random = new java.util.Random();
-        }
-
-        public int compare(State a, State b) {
-            return random.nextBoolean() ? -1 : 1;
-        }
-    }
-
-    /**
-     * The class can combine several heuristics, and prioritize them in
-     * different orders.
-     */
-    public class WeightedHeuristic implements Comparator<State> {
-        List<Entry<Comparator<State>, Float>> heuristics;
-
-        /**
-         * Default constructor.
-         */
-        public WeightedHeuristic() {
-            heuristics = new LinkedList<Entry<Comparator<State>, Float>>();
-        }
-
-        /**
-         * Heuristics are added with the most important one being first.
-         **/
-        public void add(Comparator<State> heuristic, float weight) {
-            heuristics.add(new SimpleEntry<Comparator<State>, Float>(
-                        heuristic, weight));
-        }
-
-        /**
-         * The WeightedHeuristic is interpreted as any normal heuristic,
-         * by the rest of the program.
-         */
-        public int compare(State a, State b) {
-            float total = 0;
-            for (Entry<Comparator<State>, Float> entry : heuristics)
-                total += entry.getValue() * entry.getKey().compare(a, b);
-
-            if (total < 0)
-                return -1;
-            else if (total > 0)
-                return 1;
-            return 0;
         }
     }
 }

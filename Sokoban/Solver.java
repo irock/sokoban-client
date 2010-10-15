@@ -151,7 +151,7 @@ public class Solver {
                 numInspected++;
 
                 if (!visited.contains(nextState)) {
-                    if (nextState.goalReached()) {
+                    if (nextState.isGoalReached()) {
                         endState = nextState;
                         if (printProgress) {
                             printInfo(numExpanded, numInspected, queue.size(),
