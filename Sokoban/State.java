@@ -219,7 +219,7 @@ public class State {
      */
     public boolean hasBox(Point pos) {
         for (int i = 0; i < boxes.length; i++)
-            if (boxes[i].equals(pos))
+            if (boxes[i] == pos)
                 return true;
         return false;
     }
@@ -258,10 +258,10 @@ public class State {
         State state = (State) o;
         /* Use the fact that the boxes are ordered. */
         for (int i = 0; i < boxes.length; i++)
-            if (!boxes[i].equals(state.boxes[i]))
+            if (boxes[i] != state.boxes[i])
                 return false;
 
-        return state.getMinPosition().equals(getMinPosition());
+        return state.getMinPosition() == getMinPosition();
     }
 
     /**
@@ -330,7 +330,7 @@ public class State {
             Point p4 = map.getPoint(pos.x + 2*right.dx, pos.y + 2*right.dy);
             Point p5 = map.getPoint(pos.x + right.dx, pos.y + right.dy);
 
-            if (start.equals(p5) || !(map.isWall(p4) || hasBox(p4)))
+            if (start == p5 || !(map.isWall(p4) || hasBox(p4)))
                 return false;
 
             if (!hasBox(p5) && map.isGoal(p5))
@@ -347,8 +347,8 @@ public class State {
                               (hasBox(p3) && !map.isGoal(p3) ? 1 : 0) +
                               (hasBox(p4) && !map.isGoal(p4) ? 1 : 0);
 
-                if (p1.equals(source) || p2.equals(source) ||
-                        p3.equals(source) || p4.equals(source))
+                if (p1 == source || p2 == source || p3 == source ||
+                        p4 == source)
                     break;
 
                 pos = p4;
@@ -356,7 +356,7 @@ public class State {
                 turned = true;
                 ++turns;
             } else if (map.isWall(p1) || hasBox(p1)) {
-                if (p1.equals(source))
+                if (p1 == source)
                     break;
                 pos = p1;
                 turned = false;
@@ -382,7 +382,7 @@ public class State {
     private boolean wouldLock(Point box, Direction direction) {
         int index = 0;
         for (int i = 0; i < boxes.length; i++)
-            if (boxes[i].equals(box))
+            if (boxes[i] == box)
                 index = i;
 
         Point backup = box;
@@ -393,7 +393,7 @@ public class State {
         for (int dx = -1; !locked && dx <= 1; dx++)
             for (int dy = -1; dy <= 1; dy++) {
                 Point p = map.getPoint(box.x + dx, box.y + dy);
-                if ((dx == 0 && dy == 0) || start.equals(p) || map.isWall(p) ||
+                if ((dx == 0 && dy == 0) || start == p || map.isWall(p) ||
                         map.isGoal(p))
                     continue;
 
@@ -498,7 +498,7 @@ public class State {
     /**
      * A greedy method for finding the sum of distances between goal squares
      * and boxes. The boxes and goal squares are paired in a greedy way so that
-     * each point in order finds the nearest box.
+     * each goal in order is paired with its nearest unpaired box.
      *
      * @return the sum of distances between each box in the state and a goal
      * square in such a way so that each goal square is paired with one box.
@@ -709,7 +709,7 @@ public class State {
         while (!queue.isEmpty()) {
             Point current = queue.poll();
 
-            if (current.equals(to)) {
+            if (current == to) {
                 LinkedList<Direction> directions = new LinkedList<Direction>();
                 while (current != from) {
                     Entry<Point, Direction> previous = traceback.get(current);
@@ -753,7 +753,7 @@ public class State {
         for (int i = 0; i < boxes.length; i++) {
             Point box = from.boxes[i];
 
-            if (box.equals(moveBox))
+            if (box == moveBox)
                 continue;
 
             if (newBox != null && box.compareTo(newBox) > 0) {
@@ -772,7 +772,7 @@ public class State {
     private boolean wouldBeConsistent(Point box, Direction direction) {
         int index = 0;
         for (int i = 0; i < boxes.length; i++)
-            if (boxes[i].equals(box))
+            if (boxes[i] == box)
                 index = i;
 
         boxes[index] = map.getPoint(box.x + direction.dx, box.y + direction.dy);
@@ -810,8 +810,7 @@ public class State {
                     for (Point p1 : r1)
                         for (Point p2 : r2)
                             for (Point p3 : r3)
-                                if (!p1.equals(p2) && !p1.equals(p3) &&
-                                        !p2.equals(p3)) {
+                                if (p1 != p2 && p1 != p3 && p2 != p3) {
                                     found = true;
                                     break;
                                 }
