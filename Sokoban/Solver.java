@@ -22,7 +22,7 @@ public class Solver {
      * Tells whether the state path should be written to stdout when a path is
      * found.
      */
-    static boolean printStatePath = true;
+    static boolean printStatePath = false;
 
     /**
      * Tells whether a path of directions should be written to stdout when
@@ -111,13 +111,13 @@ public class Solver {
     }
 
     /**
-     * Do a breadth first search for a solution.
+     * Do an A* search for a solution.
      *
      * @param heuristic The heuristic to use.
      * @param limit The time limit.
      * @return the number of expanded nodes.
      */
-    public int breadthFirstSearch(Comparator<State> heuristic, int limit) {
+    public int search(Comparator<State> heuristic, int limit) {
         int numExpanded = 0;
         int numInspected = 0;
 
@@ -247,18 +247,35 @@ public class Solver {
         heuristic.add(new Heuristics.MinGoalDistance(), 3);
 
         long time = System.currentTimeMillis();
-        long num = solver.breadthFirstSearch(heuristic, (int)(3.0/4 * searchLimit));
+        long num = solver.search(heuristic, (int)(3.0/4 * searchLimit));
         time = System.currentTimeMillis() - time;
 
         if (solver.getEndState() == null) {
             heuristic = new Heuristics.MultipleHeuristic();
             heuristic.add(new Heuristics.MaxScore(), 3);
             time = System.currentTimeMillis();
-            num += solver.breadthFirstSearch(heuristic, (int)(1.0/4 * searchLimit));
+            num += solver.search(heuristic, (int)(1.0/4 * searchLimit));
             time = System.currentTimeMillis() - time;
         }
 
+        boolean success = false;
+
         if (solver.getEndState() != null) {
+            if (useServer) {
+                for (Direction d : solver.getEndState().directionPath())
+                    out.print(d);
+                out.println();
+                try {
+                    String result = in.readLine();
+                    success = result.equals("Good solution");
+                    if (printPuzzle)
+                        System.out.println(result);
+                } catch (IOException e) { }
+            } else
+                success = true;
+        }
+
+        if (success) {
             if (printStatePath)
                 System.out.println(solver.getEndState().statePath());
 
@@ -269,19 +286,8 @@ public class Solver {
                     System.out.print(d);
                 System.out.println();
             }
-
-            if (useServer) {
-                for (Direction d : solver.getEndState().directionPath())
-                    out.print(d);
-                out.println();
-                try {
-                    String result = in.readLine();
-                    if (printPuzzle)
-                        System.out.println(result);
-                } catch (IOException e) { }
-            }
         } else if (printPuzzle)
-            System.out.println("No solution found.");
+            System.out.println("No solution found in time.");
 
         if (useServer) {
             try {

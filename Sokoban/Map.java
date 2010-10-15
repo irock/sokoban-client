@@ -17,7 +17,7 @@ public class Map {
      * square and each square can be either a goal, a wall or neither.
      */
     private enum Square {
-        NONE, GOAL, WALL, INVALID
+        NONE, GOAL, WALL;
     };
 
     /**
@@ -412,11 +412,7 @@ public class Map {
                     start = points[row][col];
                     break;
                 case ' ':
-                    /* check if we're inside the map. */
-                    if (col == 0 || row == 0 || matrix[row-1][col] == Square.INVALID)
-                        matrix[row][col] = Square.INVALID;
-                    else
-                        matrix[row][col] = Square.NONE;
+                    matrix[row][col] = Square.NONE;
                     break;
                 case '\n':
                     row++;
@@ -428,11 +424,7 @@ public class Map {
                 col++;
         }
 
-        for (int y = 0; y < maxRow; y++)
-            for (int x = 0; x < maxCol; x++)
-                if (matrix[y][x] == Square.INVALID)
-                    matrix[y][x] = Square.WALL;
-
+        /* Ensure that the map is bounded. */
         for (int x = 0; x < maxCol; x++)
             matrix[0][x] = matrix[maxRow-1][x] = Square.WALL;
         for (int y = 0; y < maxRow; y++)

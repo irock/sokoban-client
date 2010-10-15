@@ -374,7 +374,7 @@ public class State {
 
     /**
      * Check if the movement of the given box in the given direction results in
-     * a lock, i.e.\ unsoluble game.
+     * a lock, i.e.\ unsolvable game.
      *
      * @param box The box to check.
      * @param direction The direction of movement to move the given box.
@@ -625,11 +625,11 @@ public class State {
                 else if (hasBox(p))
                     buffer.append((map.isGoal(p) ? '*' : '$'));
                 else if (map.isGoal(p))
-                    buffer.append((reachable.contains(p) ? '\\' : '.'));
+                    buffer.append((reachable.contains(p) ? '+' : '.'));
                 else if (map.isForbidden(p))
-                    buffer.append((reachable.contains(p) ? '+' : 'x'));
+                    buffer.append('x');
                 else
-                    buffer.append((reachable.contains(p) ? '/' : ' '));
+                    buffer.append((reachable.contains(p) ? ' ' : '-'));
             }
             buffer.append('\n');
         }
