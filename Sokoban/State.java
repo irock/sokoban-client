@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Collection;
 
 /**
  * A representation of a state in a Sokoban puzzle. The state is built up by
@@ -111,9 +112,9 @@ public class State {
      *
      * @return the set of reachable positions in this state.
      */
-    private Set<Point> getReachablePositions() {
+    private Collection<Point> getReachablePositions() {
         Queue<Point> queue = new LinkedList<Point>();
-        Set<Point> reachablePositions = new HashSet<Point>();
+        Collection<Point> reachablePositions = new HashSet<Point>();
 
         queue.add(start);
         reachablePositions.add(start);
@@ -152,7 +153,7 @@ public class State {
      *
      * @return the minimum position reachable in the given set.
      */
-    private Point getMinPosition(Set<Point> reachablePositions) {
+    private Point getMinPosition(Collection<Point> reachablePositions) {
         Point min = null;
         for (Point point : reachablePositions)
             if (min == null || point.compareTo(min) < 0)
@@ -188,7 +189,7 @@ public class State {
         List<Entry<Direction, Point>> moves =
             new LinkedList<Entry<Direction, Point>>();
 
-        Set<Point> reachable = getReachablePositions();
+        Collection<Point> reachable = getReachablePositions();
 
         for (Point box : boxes)
             for (Direction d : Direction.getArray()) {
@@ -454,7 +455,7 @@ public class State {
      * @return true iff the given box is locked.
      */
     private boolean boxIsLocked(Point box) {
-        return boxIsLocked(box, new HashSet<Point>());
+        return boxIsLocked(box, new LinkedList<Point>());
     }
 
     /**
@@ -465,11 +466,11 @@ public class State {
      * @param checkedBoxes Boxes priorly checked and assumed to be locked.
      * @return true iff the box is locked.
      */
-    private boolean boxIsLocked(Point box, Set<Point> checkedBoxes) {
+    private boolean boxIsLocked(Point box, Collection<Point> checkedBoxes) {
         checkedBoxes.add(box);
 
         for (Direction d1 : Direction.getArray()) {
-            Set<Point> children = new HashSet<Point>(checkedBoxes);
+            Collection<Point> children = new LinkedList<Point>(checkedBoxes);
             Direction d2 = d1.getRelative(1);
 
             Point p1 = map.getPoint(box.x + d1.dx, box.y + d1.dy);
@@ -490,7 +491,7 @@ public class State {
      * @return true iff the point in question is a wall, or iff it's a box and
      * the box in question is locked or is assumed to be locked.
      */
-    private boolean isBlocked(Point p, Set<Point> checkedBoxes) {
+    private boolean isBlocked(Point p, Collection<Point> checkedBoxes) {
         return map.isWall(p) || (hasBox(p) &&
                 (checkedBoxes.contains(p) || boxIsLocked(p, checkedBoxes)));
     }
@@ -506,7 +507,7 @@ public class State {
     public int getGoalDistance() {
         if (goalDistance == -1) {
             List<Point> goalsLeft = new LinkedList<Point>();
-            Set<Point> boxesLeft = new HashSet<Point>();
+            Collection<Point> boxesLeft = new LinkedList<Point>();
             goalsLeft.addAll(map.getGoals());
 
             for (Point box : boxes)
@@ -535,7 +536,8 @@ public class State {
      * @return the minimum path from the point from to one of the points in the
      * destination set.
      */
-    private Entry<Point, Integer> findMinPathLength(Point from, Set<Point> dst) {
+    private Entry<Point, Integer> findMinPathLength(Point from,
+            Collection<Point> dst) {
         Queue<Point> queue = new LinkedList<Point>();
         int[][] visited = new int[map.getNumRows()][map.getNumCols()];
 
@@ -605,7 +607,7 @@ public class State {
     @Override
     public String toString() {
         StringBuffer buffer = new StringBuffer(map.getNumRows()*map.getNumCols());
-        Set<Point> reachable = getReachablePositions();
+        Collection<Point> reachable = getReachablePositions();
 
         buffer.append(String.format("score: %d\n", getNumBoxesInGoal()));
         buffer.append(String.format("distance: %d\n", getGoalDistance()));
