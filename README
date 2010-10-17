@@ -28,4 +28,4 @@ The Sokoban solver can be built using Apache Ant.
 
     1. cd <project directory>
     2. ant jar 
-    3. java -jar build/jars/Solver.jar <board number>
+    3. java -jar build/jars/Sokoban.jar <board number>
