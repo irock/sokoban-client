@@ -1,0 +1,31 @@
+Sokoban Solver
+===========
+:Author:    Oskar Arvidsson <oskar@irock.se>
+:Date:      2010-10-17
+
+== About
+
+This project is an attempt at creating a solver for Sokoban games. It was done
+as part of a course in Artificial Intelligence at the Royal Institute of
+Technology, Stockholm.
+
+=== Authors
+
+The source code of this project was written by:
+
+    * Oskar Arvidsson
+    * Oskar Werkelin Ahlin
+    * Christoffer Hirsimaa
+    * Agnes Skattman Udd
+
+=== License
+
+The source code of this project is released in the public domain.
+
+== How to build and run the code
+
+The Sokoban solver can be built using Apache Ant.
+
+    1. cd <project directory>
+    2. ant jar 
+    3. java -jar build/jars/Solver.jar <board number>
